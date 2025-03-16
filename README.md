@@ -52,26 +52,27 @@ walks the user through the initial setup on the IBM Quantum Platform.
 
 ---
   
-- **Method 2:** (if you want visibility into what you will execute on your computer): Run the provided installation script with Windows PowerShell.
+- **Method 2:** (if you want visibility into the script you will execute on your computer): Run the provided installation script with Windows PowerShell.
 
-  **Step 1**: Download the script qiskit_installer.ps1 
-  - [Click here](https://github.com/ket-q/qiskit_windows_installer_pub/blob/main/qiskit_installer.ps1)
-  - Click on "Download raw file" next to the pen ✏️
-  
-  **Step 2**: Open a PowerShell console
-  - Press the Windows key or open the start menu
-  - Type "PowerShell" in the search bar and open it.  
+  **Step 1**: Open a PowerShell console window
+  - Type ``PowerShell`` in the search bar and click ``Windows PowerShell`` (the blue square with the white > prompt).  
 
-  **Step 3**: Navigate to the qiksit_installer.ps1 download file.\
-*When opening a PowerShell window, you will be placed in your home directory and you need to change to the Downloads folder (or any other folder where you downloaded the script)*:
-  
+   **Step 2:** Copy the following command into the clipboard (by clicking
+   on the square symbol in the right corner):
   ```powershell
-  cd ~\Downloads
+  irm "https://github.com/ket-q/qiskit_windows_installer/raw/refs/heads/main/qiskit_installer.ps1" | iex
   ```
-  **Step 4** Execute the following command 
+
+  Alternatively, to temporarily set the Windows execution policy for the installer script
+  to ``Bypass'':
   ```powershell
-  Set-ExecutionPolicy Bypass -Scope Process -Force && .\qiskit_installer.ps1
+  Set-ExecutionPolicy Bypass -Scope Process -Force; if($?) { irm "https://github.com/ket-q/qiskit_windows_installer/raw/refs/heads/main/qiskit_installer.ps1" | iex}
   ```
+
+
+  **Step 3:** Paste the command from the clipboard into
+   your PowerShell console window (click on the PowerShell console window
+   and press CTRL+ V, followed by ENTER). 
 
 ---
 
