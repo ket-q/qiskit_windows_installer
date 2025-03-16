@@ -14,7 +14,7 @@
 
 ##  📍 What is QIWI ?
 
-QIWI is a QIskit Windows installer will set up Qiskit and a local copy of VSCode on your computer, with a ready-to-use Python virtual environment for Jupyter notebooks.
+QIWI, the **Q**uiskit **I**nstaller for **WI**ndows, will set up Qiskit and a local copy of Visual Studio Code (VSCode) on your computer, with a ready-to-use Python virtual environment for Jupyter notebooks.
 
 <br />
 
@@ -22,7 +22,10 @@ QIWI is a QIskit Windows installer will set up Qiskit and a local copy of VSCode
 
 - Only install software on a computer that is not production-level or mission-critical to you. (This is a general truth that does not pertain only to this installer.)
 
-- If the installation fails: Create a fresh user account ([tutorial video for it](https://www.youtube.com/watch?v=LpPZ1oBjsnM)) and log in under this account to install Qiskit. This will help insulate your Qiskit SDK from other software you may have installed on your computer. This is particularly important if your computer already has a complicated installation history of software frameworks.
+- You are recommended to install Qiskit in a fresh user account on your computer.
+  - This will help insulate your Qiskit SDK from other software you may have already installed on your computer, particularly if your computer already has a complicated software installation history.
+  - Please refer to this [tutorial video](https://www.youtube.com/watch?v=LpPZ1oBjsnM) on how to create a fresh user account.
+  - Please log in under this account to install Qiskit.
 
 <br />
 
@@ -35,20 +38,21 @@ QIWI is a QIskit Windows installer will set up Qiskit and a local copy of VSCode
 
 - **Method 1:** (recommended if you're ok with downloading and executing an executable on your computer):
 
-  - Download and execute the qiskit_installer.exe. ([Click here](https://github.com/ket-q/qiskit_windows_installer_pub/raw/refs/heads/main/qiskit_installer.exe))
-  - A blue Windows box may appears because it consider our program as a threat, if so click on "More informations" and "Execute anyway".
+  - Download and execute qiskit_installer.exe ([click here](https://github.com/ket-q/qiskit_windows_installer_pub/raw/refs/heads/main/qiskit_installer.exe)).
+  - Windows may present you with a security warning in a blue box because it considers the installer as a security thread. To proceed with the installation,
+  please click on "More informations" and "Execute anyway".
 
 
 ---
   
-- **Method 2:** (if you want visibility into what you will execute): Run script with powershell:
+- **Method 2:** (if you want visibility into what you will execute on your computer): Run the provided installation script with Windows PowerShell.
 
   **Step 1**: Download the script qiskit_installer.ps1 
   - [Click here](https://github.com/ket-q/qiskit_windows_installer_pub/blob/main/qiskit_installer.ps1)
   - Click on "Download raw file" next to the pen ✏️
   
-  **Step 2**: Open a powershell console
-  - Press the Windows key or open start menu
+  **Step 2**: Open a PowerShell console
+  - Press the Windows key or open the start menu
   - Type "PowerShell" in the search bar and open it.  
 
   **Step 3**: Navigate to the qiksit_installer.ps1 download file.\
