@@ -27,6 +27,10 @@ walks the user through the initial setup on the IBM Quantum Platform.
   - This will help insulate your Qiskit SDK from other software you may have already installed on your computer, particularly if your computer already has a complicated software installation history.
   - Please refer to this [tutorial video](https://www.youtube.com/watch?v=LpPZ1oBjsnM) on how to create a fresh user account.
   - Please log in under this account to install Qiskit.
+  - **Note:** if you forego to create a fresh user account, there is still a very
+    high likelyhood for your installation to succeed. But you effectively omit one
+    safety-net to safe-guard your existing computer configuration and insulate
+    the Qiskit environment from software already installed on your computer. 
 
 - Installation requirements for using QIWI:
 
@@ -63,8 +67,9 @@ walks the user through the initial setup on the IBM Quantum Platform.
   irm "https://github.com/ket-q/qiskit_windows_installer/raw/refs/heads/main/qiskit_installer.ps1" | iex
   ```
 
-  Alternatively, to temporarily set the Windows execution policy for the installer script
-  to ``Bypass'':
+  If Windows does not permit execution of the installer script, you can use the following command that sets the Windows execution policy to ``Bypass'' prior
+  to running the installer (this setting is temporary and pertains only
+  to the on-off execution of the installer):
   ```powershell
   Set-ExecutionPolicy Bypass -Scope Process -Force; if($?) { irm "https://github.com/ket-q/qiskit_windows_installer/raw/refs/heads/main/qiskit_installer.ps1" | iex}
   ```
