@@ -16,7 +16,7 @@ $qwi_vstr = 'qiskit_' + $qiskit_version.Replace('.', '_')
 # Name and URL of the requirements.txt file to download from GitHub:
 $requirements_file = 'requirements_qiskit_1_3_2.txt'
 #$requirements_file = "symeng_requirements.txt"
-$req_URL = "https://raw.githubusercontent.com/ket-q/launchpad/refs/heads/main/config/${requirements_file}"
+$req_URL = "https://raw.githubusercontent.com/ket-q/qiskit_windows_installer/refs/heads/main/resources/config/${requirements_file}"
 
 # Top-level folder of installer to keep files other than the venvs:
 $ROOT_DIR = Join-Path ${env:LOCALAPPDATA} -ChildPath 'qiskit_windows_installer'
