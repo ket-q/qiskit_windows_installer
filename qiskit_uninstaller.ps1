@@ -425,11 +425,7 @@ try {
 }
 
 
-Log-Status "INSTALLATION DONE"
+Log-Status "UNINSTALLATION DONE"
 
 
 
-Start-Sleep -Seconds 30
-
-# Done
-Exit 0
