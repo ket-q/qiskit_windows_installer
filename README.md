@@ -7,7 +7,7 @@
   <!-- PROJECT LOGO -->
   <br />
     
-  <img alt="QiskitWindowslogo" src="ressources/assets/Logo.svg" width="700" height="300">
+  <img alt="QiskitWindowslogo" src="resources/assets/Logo.svg" width="700" height="300">
     
   <br />
 </div>
@@ -80,7 +80,7 @@ walks the user through the initial setup on the IBM Quantum Platform.
 
 #### Step 1️⃣: Review and accept the license agreements in the pop-up window
 
-![GIF aceppting licenses](https://github.com/ket-q/qiskit_windows_installer_pub/blob/main/ressources/assets/accepting.gif)
+![GIF aceppting licenses](https://github.com/ket-q/qiskit_windows_installer/blob/main/resources/assets/accepting.gif)
 
 
 #### Step 2️⃣: Wait for the downloading of the packages and the opening of VS Code
@@ -96,7 +96,7 @@ This Jupyter notebok includes:
   local computer. 
 
 
-*You can also download the setup [notebook](https://raw.githubusercontent.com/ket-q/qiskit_windows_installer_pub/refs/heads/main/notebooks/IBM_account_setup.ipynb) manually.*
+*You can also download the setup [notebook](https://github.com/ket-q/qiskit_windows_installer/blob/main/resources/notebook/IBM_account_setup.ipynb) manually. Click on "download raw file" button next to the pen (top-right)*
 
 #### Step 4️⃣ (Optional): We recommended to save this setup notebook in a folder where you keep your quantum computing projects
 
@@ -111,7 +111,7 @@ This Jupyter notebok includes:
 
 ### With any Jupyter Notebook:
 
-![GIF select kernel](https://github.com/ket-q/qiskit_windows_installer_pub/blob/main/ressources/assets/select.gif)
+![GIF select kernel](https://github.com/ket-q/qiskit_windows_installer/blob/main/resources/assets/select.gif)
 
 1. Click "Select Kernel" on the top right
 2. Click "Python Environnements"
@@ -146,7 +146,7 @@ you your computer.
 
 ## 📜 License
 
-[License of this installer](https://github.com/ket-q/qiskit_windows_installer_pub/blob/main/LICENSE)
+[License of this installer](https://github.com/ket-q/qiskit_windows_installer/blob/main/LICENSE)
 
 In addition, you will be asked to accept the following licences during installation:
 - [VS Code](https://code.visualstudio.com/license)
