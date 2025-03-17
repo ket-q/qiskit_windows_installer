@@ -14,7 +14,7 @@ $qwi_vstr = 'qiskit_' + $qiskit_version.Replace('.', '_')
 #
 
 # Name and URL of the requirements.txt file to download from GitHub:
-$requirements_file = 'requirements_qiskit_1_3_2.txt'
+$requirements_file = 'requirements_'+ $qwi_vstr +'.txt'
 #$requirements_file = "symeng_requirements.txt"
 $req_URL = "https://raw.githubusercontent.com/ket-q/qiskit_windows_installer/refs/heads/main/resources/config/${requirements_file}"
 
@@ -1195,7 +1195,7 @@ catch {
 
 Write-Header "Step 16/16: Open Visual Studio code with the notebook"
 try {
-    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/ket-q/qiskit_windows_installer_pub/refs/heads/main/ressources/notebook/IBM_account_setup.ipynb" -OutFile "$env:USERPROFILE\Downloads\IBM_account_setup.ipynb"
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/ket-q/qiskit_windows_installer/refs/heads/main/resources/notebook/IBM_account_setup.ipynb" -OutFile "$env:USERPROFILE\Downloads\IBM_account_setup.ipynb"
     Invoke-Native code --disable-workspace-trust 
     Start-Sleep -Seconds 2
     Invoke-Native code  --reuse-window "$env:USERPROFILE\Downloads\IBM_account_setup.ipynb"
@@ -1207,8 +1207,4 @@ catch {
 }
 
 Log-Status "INSTALLATION DONE"
-
-Start-Sleep -Seconds 30
-
-# Done
-Exit 0
+Log-Status "You can close this window."
