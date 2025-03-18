@@ -63,13 +63,7 @@ walks the user through the initial setup on the IBM Quantum Platform.
 
    **Step 2:** Copy the following command into the clipboard (by clicking
    on the square symbol in the right corner):
-  ```powershell
-  irm "https://github.com/ket-q/qiskit_windows_installer/raw/refs/heads/main/qiskit_installer.ps1" | iex
-  ```
-
-  If Windows does not permit execution of the installer script, you can use the following command that sets the Windows execution policy to ``Bypass'' prior
-  to running the installer (this setting is temporary and pertains only
-  to the on-off execution of the installer):
+  
   ```powershell
   Set-ExecutionPolicy Bypass -Scope Process -Force; if($?) { irm "https://github.com/ket-q/qiskit_windows_installer/raw/refs/heads/main/qiskit_installer.ps1" | iex}
   ```
