@@ -4,19 +4,7 @@ $PSNativeCommandUseErrorActionPreference = $true
 
 $qiskit_windows_installer_version = '0.1.0'
 $python_version = '3.12.9' # 3.13 not working because ray requires Python 3.12
-$qiskit_version = '1.3.2'
 
-# Name of venv in .virtualenvs
-$qwi_vstr = 'qiskit_' + $qiskit_version.Replace('.', '_')
-
-#
-# Folders and files
-#
-
-# Name and URL of the requirements.txt file to download from GitHub:
-$requirements_file = 'requirements_'+ $qwi_vstr +'.txt'
-#$requirements_file = "symeng_requirements.txt"
-$req_URL = "https://raw.githubusercontent.com/ket-q/qiskit_windows_installer/refs/heads/main/resources/config/${requirements_file}"
 
 # Top-level folder of installer to keep files other than the venvs:
 $ROOT_DIR = Join-Path ${env:LOCALAPPDATA} -ChildPath 'qiskit_windows_installer'
@@ -616,242 +604,373 @@ Import the qiskit version number, and compare it to the expected version.
     }
 
     if ( $v -eq $qiskit_version ) {
-        Write-Host "Detected Qiskit version number $v"
+        Log-Status "Detected Qiskit version number $v"
     } else {
         Log-Err 'warn' 'Qiskit version number check' 'Failed'
     }
 }
 
 
-function Licenses-window{
+function Config-window{
     Add-Type -AssemblyName PresentationFramework
 
-    $window = New-Object System.Windows.Window
-    $window.Title = "Qiskit Windows Installer"
-    $window.Width = 800
-    $window.Height = 600
-    $window.Background = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(35, 35, 35))  # Light black
+$window = New-Object System.Windows.Window
+$window.Title = "Qiskit Windows Installer"
+$window.Width = 900
+$window.Height = 800
+$window.Background = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(35, 35, 35))  # Light black
 
-    # Title TextBlock
-    $titleBlock = New-Object System.Windows.Controls.TextBlock
-    $titleBlock.Text = "Qiskit Windows Installer"
-    $titleBlock.FontSize = 34
-    $titleBlock.FontWeight = "Bold"  # Bold text
-    $titleBlock.HorizontalAlignment = "Center"
-    $titleBlock.Margin = [System.Windows.Thickness]::new(10)
-    $titleBlock.FontFamily = "Segoe UI"  # Modern font
-    $titleBlock.Foreground = [System.Windows.Media.Brushes]::White  # White text
 
-    # Notice TextBlock
+
+# Logo ImageBlock
+$logoBlock = New-Object System.Windows.Controls.Image
+$logoBlock.HorizontalAlignment = "Center"
+
+# Create a BitmapImage and set the Uri to the raw GitHub image URL
+$logoBlock.Margin = [System.Windows.Thickness]::new(0,-40,0,0)
+
+$bitmap = New-Object System.Windows.Media.Imaging.BitmapImage
+$bitmap.BeginInit()
+$bitmap.UriSource = New-Object System.Uri("https://github.com/ket-q/qiskit_windows_installer/blob/main/resources/assets/QIWI_logo_white.png?raw=true", [System.UriKind]::Absolute)
+$bitmap.EndInit()
+
+# Set the source of the Image control
+$logoBlock.Source = $bitmap
+$logoBlock.Width = 750  # Adjust width as needed
+$logoBlock.Height = 250 # Adjust height as needed
+
+
+
+
+# Notice TextBlock
+$textBlock = New-Object System.Windows.Controls.TextBlock
+$textBlock.Text = "The Qiskit Windows Installer will install the following software packages on your computer."
+$textBlock.TextWrapping = [System.Windows.TextWrapping]::Wrap
+$textBlock.Margin = [System.Windows.Thickness]::new(-20,-70,10,0)
+$textBlock.FontSize = 20  # Reduced font size
+$textBlock.HorizontalAlignment = "Center"
+$textBlock.FontStyle = [System.Windows.FontStyles]::Italic
+$textBlock.FontFamily = "Segoe UI"  # Modern font
+$textBlock.Foreground = [System.Windows.Media.Brushes]::White  # White text
+
+
+# Notice TextBlock
+$textBlock2 = New-Object System.Windows.Controls.TextBlock
+$textBlock2.TextWrapping = [System.Windows.TextWrapping]::Wrap
+$textBlock2.Margin = [System.Windows.Thickness]::new(10,0,30,20)
+$textBlock2.FontSize = 20
+$textBlock2.FontFamily = "Segoe UI"
+
+# First part - normal color
+$run1 = New-Object System.Windows.Documents.Run "By validating the checkbox and continuing the execution, you "
+$run1.FontWeight = "Bold"
+$run1.Foreground = [System.Windows.Media.Brushes]::White
+
+
+# Second part - red color
+$run2 = New-Object System.Windows.Documents.Run "agree to respect the following license agreements:"
+$run2.FontWeight = "Bold"
+$run2.Foreground = [System.Windows.Media.Brushes]::Red
+
+# Add both runs to the TextBlock
+$textBlock2.Inlines.Add($run1)
+$textBlock2.Inlines.Add($run2)
+
+
+# Function to create a checkbox with a hyperlink
+function Create-CheckboxWithLink {
+    param (
+        [string]$checkBoxContent,
+        [string]$linkText,
+        [string]$url
+    )
+    
+    $checkBox = New-Object System.Windows.Controls.CheckBox
+    $checkBox.Margin = [System.Windows.Thickness]::new(5)
+    $checkBox.Width = 500
+    $checkBox.Height = 40  
+    $checkBox.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
+    $checkBox.VerticalAlignment = [System.Windows.VerticalAlignment]::Center  
+
     $textBlock = New-Object System.Windows.Controls.TextBlock
-    $textBlock.Text = "The Qiskit Windows Installer will install the following software packages on your computer. You are required to agree with their license agreements to proceed:"
-    $textBlock.TextWrapping = [System.Windows.TextWrapping]::Wrap
-    $textBlock.Margin = [System.Windows.Thickness]::new(10,30,30,30)
-    $textBlock.FontSize = 20  # Reduced font size
-    $textBlock.FontWeight = "Bold"  # Bold text
-    $textBlock.FontFamily = "Segoe UI"  # Modern font
-    $textBlock.Foreground = [System.Windows.Media.Brushes]::White  # White text
+    $textBlock.Margin = [System.Windows.Thickness]::new(0, -3, 0, 0)
+    $textBlock.Inlines.Add($checkBoxContent)
+    $textBlock.FontSize = 16
+    $textBlock.FontFamily = "Segoe UI"
+    $textBlock.Foreground = [System.Windows.Media.Brushes]::White
+    $textBlock.HorizontalAlignment = "Left"
 
-    # Function to create a checkbox with a hyperlink
-    function Create-CheckboxWithLink {
-        param (
-            [string]$checkBoxContent,
-            [string]$linkText,
-            [string]$url
-        )
-        
-        $checkBox = New-Object System.Windows.Controls.CheckBox
-        $checkBox.Margin = [System.Windows.Thickness]::new(5)
-        $checkBox.Width = 500
-        $checkBox.Height = 40  
-        $checkBox.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Left
-        $checkBox.VerticalAlignment = [System.Windows.VerticalAlignment]::Center  
+    $hyperlink = New-Object System.Windows.Documents.Hyperlink
+    $hyperlink.Inlines.Add($linkText)
+    $hyperlink.Foreground = [System.Windows.Media.Brushes]::LightSkyBlue
+    $hyperlink.Cursor = [System.Windows.Input.Cursors]::Hand
+    $hyperlink.Tag = $url  # Store the URL in the Tag property
 
-        $textBlock = New-Object System.Windows.Controls.TextBlock
-        $textBlock.Margin = [System.Windows.Thickness]::new(0, -3, 0, 0)
-        $textBlock.Inlines.Add($checkBoxContent)
-        $textBlock.FontSize = 16
-        $textBlock.FontWeight = "Bold"
-        $textBlock.FontFamily = "Segoe UI"
-        $textBlock.Foreground = [System.Windows.Media.Brushes]::White
-        $textBlock.HorizontalAlignment = "Left"
-
-        $hyperlink = New-Object System.Windows.Documents.Hyperlink
-        $hyperlink.Inlines.Add($linkText)
-        $hyperlink.Foreground = [System.Windows.Media.Brushes]::LightSkyBlue
-        $hyperlink.Cursor = [System.Windows.Input.Cursors]::Hand
-        $hyperlink.Tag = $url  # Store the URL in the Tag property
-
-        # Event handler that retrieves the URL from the Tag property
-        $hyperlink.Add_Click({
-            $clickedLink = $_.Source
-            $linkUrl = $clickedLink.Tag
-            if ($linkUrl) {
-                Start-Process $linkUrl
-            }
-        })
-
-        $textBlock.Inlines.Add(" ")
-        $textBlock.Inlines.Add($hyperlink)
-        $checkBox.Content = $textBlock
-        
-        return $checkBox
-    }
-
-    # Checkboxes
-    $checkBoxVSCode = Create-CheckboxWithLink "VSCode" "(VSCode EULA)" "https://code.visualstudio.com/license"
-    $checkBoxPython = Create-CheckboxWithLink "Python" "(Python License Agreement)" "https://docs.python.org/3/license.html"
-    $checkBoxQiskit = Create-CheckboxWithLink "Qiskit" "(Qiskit License Agreement)" "https://quantum.ibm.com/terms"
-    $checkBoxPyenv = Create-CheckboxWithLink "Pyenv-win" "(Pyenv License Agreement)" "https://github.com/pyenv-win/pyenv-win/blob/master/LICENSE"
-    $checkBoxInstaller = Create-CheckboxWithLink "Qiskit Windows Installer" "(Installer License Agreement)" "https://github.com/ket-q/qiskit_windows_installer/blob/main/LICENSE"
-
-
-
-    # Button Styles
-    $cornerRadius = New-Object System.Windows.CornerRadius(15)
-
-    function Create-RoundedButton {
-        param (
-            [string]$content,
-            [string]$color
-        )
-        
-        # Create the button
-        $button = New-Object System.Windows.Controls.Button
-        $button.Content = $content
-        $button.Width = 150
-        $button.Height = 50
-        $button.FontSize = 22
-        $button.FontWeight = "Bold"  # Bold text
-        $button.FontFamily = "Segoe UI"  # Modern font
-        $button.Background = [System.Windows.Media.Brushes]::$color
-        $button.Foreground = [System.Windows.Media.Brushes]::White  # White text
-        $button.BorderBrush = $color
-
-        # Center the button within its container (prevent stretching)
-        $button.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
-        $button.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
-
-        # Create a Border with rounded corners
-        $border = New-Object System.Windows.Controls.Border
-        $border.Width = $button.Width + 30
-        $border.CornerRadius = $cornerRadius
-        $border.Background = $button.Background
-        $border.Child = $button
-
-        return $border, $button
-    }
-
-
-    # Create buttons
-    $borderProceed, $buttonProceed = Create-RoundedButton "Accept" "DarkGreen"
-    $borderCancel, $buttonCancel = Create-RoundedButton "Cancel" "DarkRed"
-
-
-    # Add MouseEnter and MouseLeave event to both buttons
-    $buttonProceed.Add_MouseEnter({
-        $buttonProceed.Foreground = [System.Windows.Media.Brushes]::Black
-        $borderProceed.Background = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(190, 230, 253))  
-
-    })
-    $buttonProceed.Add_MouseLeave({
-        $buttonProceed.Background = [System.Windows.Media.Brushes]::DarkGreen
-        $borderProceed.Background = [System.Windows.Media.Brushes]::DarkGreen
-        $buttonProceed.Foreground = [System.Windows.Media.Brushes]::White
-
-    })
-
-    $buttonCancel.Add_MouseEnter({
-        $buttonCancel.Foreground = [System.Windows.Media.Brushes]::Black
-        $borderCancel.Background = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(190, 230, 253))
-
-    })
-    $buttonCancel.Add_MouseLeave({
-        $buttonCancel.Background = [System.Windows.Media.Brushes]::DarkRed
-        $borderCancel.Background = [System.Windows.Media.Brushes]::DarkRed
-        $buttonCancel.Foreground = [System.Windows.Media.Brushes]::White
-
-    })
-
-
-
-
-    $buttonProceed.Add_IsEnabledChanged({
-        if (-not $buttonProceed.IsEnabled) {
-            $buttonProceed.Foreground = [System.Windows.Media.Brushes]::DarkGray
-            $borderProceed.Background = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(244, 244, 244))  # Red color
-            } else {
-            $buttonProceed.Background = [System.Windows.Media.Brushes]::DarkGreen
-            $buttonProceed.Foreground = [System.Windows.Media.Brushes]::White
-            $borderProceed.Background = [System.Windows.Media.Brushes]::DarkGreen
+    # Event handler that retrieves the URL from the Tag property
+    $hyperlink.Add_Click({
+        $clickedLink = $_.Source
+        $linkUrl = $clickedLink.Tag
+        if ($linkUrl) {
+            Start-Process $linkUrl
         }
     })
 
-    $buttonProceed.IsEnabled = $false
+    $textBlock.Inlines.Add(" ")
+    $textBlock.Inlines.Add($hyperlink)
+    $checkBox.Content = $textBlock
+    
+    return $checkBox
+}
+
+# Checkboxes
+$checkBoxVSCode = Create-CheckboxWithLink "VSCode" "(VSCode EULA)" "https://code.visualstudio.com/license"
+$checkBoxPython = Create-CheckboxWithLink "Python" "(Python License Agreement)" "https://docs.python.org/3/license.html"
+$checkBoxQiskit = Create-CheckboxWithLink "Qiskit" "(Qiskit License Agreement)" "https://quantum.ibm.com/terms"
+$checkBoxPyenv = Create-CheckboxWithLink "Pyenv-win" "(Pyenv License Agreement)" "https://github.com/pyenv-win/pyenv-win/blob/master/LICENSE"
+$checkBoxInstaller = Create-CheckboxWithLink "Qiskit Windows Installer" "(Installer License Agreement)" "https://github.com/ket-q/qiskit_windows_installer/blob/main/LICENSE"
+
+
+
+# Button Styles
+$cornerRadius = New-Object System.Windows.CornerRadius(15)
+
+function Create-RoundedButton {
+    param (
+        [string]$content,
+        [string]$color
+    )
+    
+    # Create the button
+    $button = New-Object System.Windows.Controls.Button
+    $button.Content = $content
+    $button.Width = 150
+    $button.Height = 50
+    $button.FontSize = 22
+    $button.FontWeight = "Bold"  # Bold text
+    $button.FontFamily = "Segoe UI"  # Modern font
+    $button.Background = [System.Windows.Media.Brushes]::$color
+    $button.Foreground = [System.Windows.Media.Brushes]::White  # White text
+    $button.BorderBrush = $color
+
+    # Center the button within its container (prevent stretching)
+    $button.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+    $button.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+    # Create a Border with rounded corners
+    $border = New-Object System.Windows.Controls.Border
+    $border.Width = $button.Width + 30
+    $border.CornerRadius = $cornerRadius
+    $border.Background = $button.Background
+    $border.Child = $button
+
+    return $border, $button
+}
+
+
+# Create buttons
+$borderProceed, $buttonProceed = Create-RoundedButton "Continue" "DarkGreen"
+$borderCancel, $buttonCancel = Create-RoundedButton "Cancel" "DarkRed"
+
+$borderCancel.Margin = [System.Windows.Thickness]::new(0, 10, 0, 0)
+
+
+
+# Add MouseEnter and MouseLeave event to both buttons
+$buttonProceed.Add_MouseEnter({
+    $buttonProceed.Foreground = [System.Windows.Media.Brushes]::Black
+    $borderProceed.Background = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(190, 230, 253))  
+
+})
+$buttonProceed.Add_MouseLeave({
+    $buttonProceed.Background = [System.Windows.Media.Brushes]::DarkGreen
+    $borderProceed.Background = [System.Windows.Media.Brushes]::DarkGreen
+    $buttonProceed.Foreground = [System.Windows.Media.Brushes]::White
+
+})
+
+$buttonCancel.Add_MouseEnter({
+    $buttonCancel.Foreground = [System.Windows.Media.Brushes]::Black
+    $borderCancel.Background = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(190, 230, 253))
+
+})
+$buttonCancel.Add_MouseLeave({
+    $buttonCancel.Background = [System.Windows.Media.Brushes]::DarkRed
+    $borderCancel.Background = [System.Windows.Media.Brushes]::DarkRed
+    $buttonCancel.Foreground = [System.Windows.Media.Brushes]::White
+
+})
 
 
 
 
-
-    # Checkbox event handler
-    $checkBoxChangedHandler = {
-        if ($checkBoxVSCode.IsChecked -and $checkBoxPython.IsChecked -and $checkBoxQiskit.IsChecked -and $checkBoxPyenv.IsChecked -and $checkBoxInstaller.IsChecked) {
-            $buttonProceed.IsEnabled = $true
+$buttonProceed.Add_IsEnabledChanged({
+    if (-not $buttonProceed.IsEnabled) {
+        $buttonProceed.Foreground = [System.Windows.Media.Brushes]::DarkGray
+        $borderProceed.Background = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(244, 244, 244))  # Red color
         } else {
-            $buttonProceed.IsEnabled = $false
-        }
+        $buttonProceed.Background = [System.Windows.Media.Brushes]::DarkGreen
+        $buttonProceed.Foreground = [System.Windows.Media.Brushes]::White
+        $borderProceed.Background = [System.Windows.Media.Brushes]::DarkGreen
+    }
+})
+
+
+
+$buttonProceed.IsEnabled = $false
+
+# Notice TextBlock
+$textQiskit = New-Object System.Windows.Controls.TextBlock
+$textQiskit.TextWrapping = [System.Windows.TextWrapping]::Wrap
+$textQiskit.Margin = [System.Windows.Thickness]::new(10,0,30,0)
+$textQiskit.FontSize = 20  # Smaller font size
+$textQiskit.FontFamily = "Segoe UI"  # Modern font
+$textQiskit.FontWeight = "Bold"
+
+# First part - normal white text
+$run1 = New-Object System.Windows.Documents.Run "Please also "
+$run1.Foreground = [System.Windows.Media.Brushes]::White
+
+# Red part - emphasized text
+$run2 = New-Object System.Windows.Documents.Run "select the Qiskit Version "
+$run2.Foreground = [System.Windows.Media.Brushes]::Red
+
+# Last part - normal white text
+$run3 = New-Object System.Windows.Documents.Run "you wish to install:"
+$run3.Foreground = [System.Windows.Media.Brushes]::White
+
+# Add the runs to the TextBlock
+$textQiskit.Inlines.Add($run1)
+$textQiskit.Inlines.Add($run2)
+$textQiskit.Inlines.Add($run3)
+
+
+# Create the ComboBox
+$comboBox = New-Object Windows.Controls.ComboBox
+$comboBox.Width = 200
+$comboBox.Height = 35
+$comboBox.FontSize = 20
+$comboBox.Margin = '10'
+$comboBox.HorizontalAlignment = "Left"
+
+$global:checkSelection = $false
+
+
+$global:qiskit_selection = $null
+
+# Add items to the ComboBox
+@("qiskit_1.4.2 (latest)", "qiskit_1.3.2") | ForEach-Object {
+    $item = New-Object Windows.Controls.ComboBoxItem
+    $item.Content = $_
+    $item.FontSize = 20
+    $null = $comboBox.Items.Add($item)
+}
+
+# Event handler for selection changed
+$comboBox.Add_SelectionChanged({
+    $selectedItem = $comboBox.SelectedItem
+    $global:qiskit_selection = $($selectedItem.Content)
+
+    if ($selectedItem -ne $null) {
+        $global:checkSelection = $true
     }
 
-    $checkBoxVSCode.Add_Checked($checkBoxChangedHandler)
-    $checkBoxPython.Add_Checked($checkBoxChangedHandler)
-    $checkBoxQiskit.Add_Checked($checkBoxChangedHandler)
-    $checkBoxPyenv.Add_Checked($checkBoxChangedHandler)
-    $checkBoxInstaller.Add_Checked($checkBoxChangedHandler)
+    & $checkBoxChangedHandler
+})
 
-    $checkBoxVSCode.Add_Unchecked($checkBoxChangedHandler)
-    $checkBoxPython.Add_Unchecked($checkBoxChangedHandler)
-    $checkBoxQiskit.Add_Unchecked($checkBoxChangedHandler)
-    $checkBoxPyenv.Add_Unchecked($checkBoxChangedHandler)
-    $checkBoxInstaller.Add_Unchecked($checkBoxChangedHandler)
 
-    # StackPanel Layout
-    $stackPanel = New-Object System.Windows.Controls.StackPanel
-    $null = $stackPanel.Children.Add($titleBlock)
-    $null = $stackPanel.Children.Add($textBlock)
-    $null = $stackPanel.Children.Add($checkBoxVSCode)
-    $null = $stackPanel.Children.Add($checkBoxPython)
-    $null = $stackPanel.Children.Add($checkBoxQiskit)
-    $null = $stackPanel.Children.Add($checkBoxPyenv)
-    $null = $stackPanel.Children.Add($checkBoxInstaller)
-    $null = $stackPanel.Children.Add($borderProceed)
-    $null = $stackPanel.Children.Add($borderCancel)
-
-    $window.Content = $stackPanel
-
-    # License acceptance tracking
-    $global:acceptedLicense = $false
-
-    $buttonProceed.Add_Click({
-        $global:acceptedLicense = $true
-        $window.Close()
-    })
-
-    $buttonCancel.Add_Click({
-        $global:acceptedLicense = $false
-        $window.Close()
-    })
-
-    $null = $window.ShowDialog()
-
-    if ($global:acceptedLicense) {
-        Write-Host "User accepted the license agreements."
-        return $true
+# Checkbox event handler
+$checkBoxChangedHandler = {
+    if ($checkBoxVSCode.IsChecked -and $checkBoxPython.IsChecked -and $checkBoxQiskit.IsChecked -and $checkBoxPyenv.IsChecked -and $checkBoxInstaller.IsChecked -and $global:checkSelection) {
+        $buttonProceed.IsEnabled = $true
     } else {
-        Write-Host "User cancelled or closed the window."
-        return $false
+        $buttonProceed.IsEnabled = $false
+    }
+}
+
+$checkBoxVSCode.Add_Checked($checkBoxChangedHandler)
+$checkBoxPython.Add_Checked($checkBoxChangedHandler)
+$checkBoxQiskit.Add_Checked($checkBoxChangedHandler)
+$checkBoxPyenv.Add_Checked($checkBoxChangedHandler)
+$checkBoxInstaller.Add_Checked($checkBoxChangedHandler)
+
+$checkBoxVSCode.Add_Unchecked($checkBoxChangedHandler)
+$checkBoxPython.Add_Unchecked($checkBoxChangedHandler)
+$checkBoxQiskit.Add_Unchecked($checkBoxChangedHandler)
+$checkBoxPyenv.Add_Unchecked($checkBoxChangedHandler)
+$checkBoxInstaller.Add_Unchecked($checkBoxChangedHandler)
+
+
+
+
+
+# StackPanel Layout
+$stackPanel = New-Object System.Windows.Controls.StackPanel
+$null = $stackPanel.Children.Add($logoBlock)
+$null = $stackPanel.Children.Add($textBlock)
+$null = $stackPanel.Children.Add($textBlock2)
+$null = $stackPanel.Children.Add($checkBoxVSCode)
+$null = $stackPanel.Children.Add($checkBoxPython)
+$null = $stackPanel.Children.Add($checkBoxQiskit)
+$null = $stackPanel.Children.Add($checkBoxPyenv)
+$null = $stackPanel.Children.Add($checkBoxInstaller)
+$null = $stackPanel.Children.Add($textQiskit)
+$null = $stackPanel.Children.Add($comboBox)
+$null = $stackPanel.Children.Add($borderProceed)
+$null = $stackPanel.Children.Add($borderCancel)
+
+$window.Content = $stackPanel
+
+# License acceptance tracking
+$global:acceptedLicense = $false
+
+$buttonProceed.Add_Click({
+    $global:acceptedLicense = $true
+    $window.Close()
+})
+
+$buttonCancel.Add_Click({
+    $global:acceptedLicense = $false
+    $window.Close()
+})
+
+$null = $window.ShowDialog()
+
+Log-Status "Qiskit_version = $global:qiskit_selection"
+
+
+if ($global:acceptedLicense) {
+    Log-Status "User accepted the license agreements."
+    return $true , $qiskit_selection
+} else {
+    Log-Status "User cancelled or closed the window."
+    return $false , $qiskit_selection
+}
+}
+
+function Setup-Qiskit {
+
+    param (
+        [Parameter(
+            Mandatory = $true,
+            Position = 1)]
+        [string]$qiskit_output
+    )
+
+    if ($qiskit_output -eq "qiskit_1.4.2 (latest)") {
+        $qiskit_output = "qiskit_1.4.2"
     }
 
+    $qiskit_version = $qiskit_output.Replace("qiskit_", "")
 
+    # Name of venv in .virtualenvs
+    $qwi_vstr = 'qiskit_' + $qiskit_version.Replace('.', '_')
+
+    $requirements_file = 'requirements_'+ $qwi_vstr +'.txt'
+    #$requirements_file = "symeng_requirements.txt"
+
+    $req_URL = "https://raw.githubusercontent.com/ket-q/qiskit_windows_installer/refs/heads/main/resources/config/${requirements_file}"
+
+    return $qiskit_version, $qwi_vstr, $requirements_file, $req_URL
 }
 
 
@@ -872,9 +991,42 @@ Write-Header 'Step 2/16: Check installation platform'
 Check-Installation-Platform
 
 #
+# Get software license checked by user
+#
+
+Write-Header 'Step 3/16: Config window (licences and qiskit version)'
+
+
+try {
+
+    $result, $qiskit_output = Config-window
+
+    $qiskit_version, $qwi_vstr, $requirements_file, $req_URL = Setup-Qiskit $qiskit_output
+    
+
+
+    if (!$result){ #User didn't accept the software Licence, program should stop
+    $err_msg = (
+        'User refused the software licence',
+        'Manual check required.'
+        ) -join "`r`n"
+    Log-Err 'fatal' 'Licence acceptation' $err_msg
+    }
+} 
+catch {
+
+    $err_msg = (
+        "Unable to open licence windows",
+        "Manual intervention required."
+        ) -join "`r`n"
+    Fatal-Error $err_msg 1  
+
+}
+
+#
 # Set up installer root directory structure
 #
-Write-Header 'Step 3/16: set up installer root folder structure'
+Write-Header 'Step 4/16: set up installer root folder structure'
 if (!(Test-Path $ROOT_DIR)){
     New-Item -Path $ROOT_DIR -ItemType Directory
 }
@@ -892,7 +1044,7 @@ if ( !($qinst_root_obj.PSIsContainer) ) {
 }
 
 # Create log directory
-Write-Header 'Step 3a/16: set up log folder'
+Write-Header 'Step 4a/16: set up log folder'
 try {
     if ( !(Test-Path $LOG_DIR) ) {
         # Log folder does not exist yet => create
@@ -915,7 +1067,7 @@ catch {
 
 # Create the enclave folder $ROOT_DIR\$qwi_vstr. This is from where we
 # set up the virtual environment.
-Write-Header 'Step 3b/16: set up enclave folder'
+Write-Header 'Step 4b/16: set up enclave folder'
 try {
     $ENCLAVE_DIR = Join-Path $ROOT_DIR -ChildPath $qwi_vstr
     if (!(Test-Path $ENCLAVE_DIR)) {
@@ -931,34 +1083,7 @@ catch {
     Fatal-Error $err_msg 1
 }
 
-#
-# Get software license checked by user
-#
 
-Write-Header 'Step 4/16: check software licenses'
-
-
-try {
-
-    $result = Licenses-window
-
-    if (!$result){ #User didn't accept the software Licence, program should stop
-    $err_msg = (
-        'User refused the software licence',
-        'Manual check required.'
-        ) -join "`r`n"
-    Log-Err 'fatal' 'Licence acceptation' $err_msg
-    }
-} 
-catch {
-
-    $err_msg = (
-        "Unable to open licence windows",
-        "Manual intervention required."
-        ) -join "`r`n"
-    Fatal-Error $err_msg 1  
-
-}
 
 
 
