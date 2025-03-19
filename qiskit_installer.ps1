@@ -1074,7 +1074,7 @@ function Setup-Qiskit {
     $requirements_file = 'requirements_'+ $qwi_vstr +'.txt'
     #$requirements_file = "symeng_requirements.txt"
 
-    $req_URL = "https://raw.githubusercontent.com/ket-q/qiskit_windows_installer/refs/heads/main/ressources/config/${requirements_file}"
+    $req_URL = "https://raw.githubusercontent.com/ket-q/qiskit_windows_installer/refs/heads/main/resources/config/${requirements_file}"
 
     return $qiskit_version, $qwi_vstr, $requirements_file, $req_URL
 }
@@ -1085,7 +1085,7 @@ function Setup-Qiskit {
 #
 # Main
 #
-Write-Header 'Step 1/16: Set install script execution policy'
+Write-Header 'Step 1/17: Set install script execution policy'
 try {
     Set-ExecutionPolicy Bypass -Scope Process -Force
 }
@@ -1093,7 +1093,7 @@ catch {
     Log-Err 'fatal' 'Install script execution policy failed at Step 1' $($_.Exception.Message)
 }
 
-Write-Header 'Step 2/16: Check installation platform'
+Write-Header 'Step 2/17: Check installation platform'
 try {
     Check-Installation-Platform
 } catch {
@@ -1103,7 +1103,7 @@ try {
 # Get software license checked by user
 #
 
-Write-Header 'Step 3/16: Config window (licences and qiskit version)'
+Write-Header 'Step 3/17: Config window (licences and qiskit version)'
 
 
 try {
@@ -1147,7 +1147,7 @@ try {
 #
 # Set up installer root directory structure
 #
-Write-Header 'Step 4/16: set up installer root folder structure'
+Write-Header 'Step 4/17: set up installer root folder structure'
 
 try {
     if (!(Test-Path $ROOT_DIR)){
@@ -1187,7 +1187,7 @@ try {
 }
 
 # Create log directory
-Write-Header 'Step 4a/16: set up log folder'
+Write-Header 'Step 4a/17: set up log folder'
 try {
     if ( !(Test-Path $LOG_DIR) ) {
         # Log folder does not exist yet => create
@@ -1211,7 +1211,7 @@ catch {
 
 # Create the enclave folder $ROOT_DIR\$qwi_vstr. This is from where we
 # set up the virtual environment.
-Write-Header 'Step 4b/16: set up enclave folder'
+Write-Header 'Step 4b/17: set up enclave folder'
 try {
     $ENCLAVE_DIR = Join-Path $ROOT_DIR -ChildPath $qwi_vstr
     if (!(Test-Path $ENCLAVE_DIR)) {
@@ -1231,7 +1231,7 @@ catch {
 #
 # VSCode
 #
-Write-Header 'Step 5/16: Install VSCode'
+Write-Header 'Step 5/17: Install VSCode'
 if ( !(Get-Command code -ErrorAction SilentlyContinue) ) {
     Log-Status 'VSCode not installed, running installer'
     Install-VSCode
@@ -1259,7 +1259,7 @@ Install-VSCode-Extension 'ms-toolsai.jupyter'
 #
 # pyenv-win
 #
-Write-Header 'Step 6/16: Install pyenv-win'
+Write-Header 'Step 6/17: Install pyenv-win'
 if ( !(Get-Command pyenv -ErrorAction SilentlyContinue) ) {
     Log-Status 'pyenv-win not installed, running installer'
     Install-pyenv-win
@@ -1288,7 +1288,7 @@ if ( !(Get-Command pyenv -ErrorAction SilentlyContinue) ) {
 # (4) Use pipenv to create the ``official'' venv visible to the user in VSCode
 #
 
-Write-Header "Step 7/16: Check if pyenv supports Python $python_version"
+Write-Header "Step 7/17: Check if pyenv supports Python $python_version"
 if ( !(Lookup-pyenv-Cache $python_version $ROOT_DIR) ) {
     $err_msg = (
         "availability-check of Python failed in Step 7",
@@ -1298,7 +1298,7 @@ if ( !(Lookup-pyenv-Cache $python_version $ROOT_DIR) ) {
     Log-Err 'fatal' $err_msg $($_.Exception.Message)      
 }
 
-Write-Header "Step 8/16: Set up Python $python_version for venv"
+Write-Header "Step 8/17: Set up Python $python_version for venv"
 try {
     $err = Invoke-Native pyenv install $python_version
     $err = Invoke-Native pyenv local $python_version
@@ -1388,7 +1388,7 @@ catch {
     Log-Err 'fatal' $err_msg $($_.Exception.Message)
 }
 
-Write-Header "Step 9/16: Download $requirements_file from $req_URL"
+Write-Header "Step 9/17: Download $requirements_file from $req_URL"
 
 
 try {
@@ -1405,7 +1405,7 @@ if ((Get-Content $requirements_file -TotalCount 1).Substring(0,3) -eq '404') {
 
 } catch {
     $err_msg = (
-        "Download of requirements file failed at Step 8",
+        "Download of requirements file failed at Step 9",
         "Manual intervention required"
         ) -join "`r`n"
     Log-Err 'fatal' $err_msg $($_.Exception.Message)
@@ -1413,7 +1413,7 @@ if ((Get-Content $requirements_file -TotalCount 1).Substring(0,3) -eq '404') {
 
 
 # Create venv
-Write-Header "Step 10/16: Set up venv $MY_VENV_DIR"
+Write-Header "Step 10/17: Set up venv $MY_VENV_DIR"
 try {
     # create venv
     Invoke-Native pyenv exec python -m venv $MY_VENV_DIR
@@ -1422,7 +1422,7 @@ try {
 }
 catch {
     $err_msg = (
-        "Setting up venv failed at Step 9",
+        "Setting up venv failed at Step 10",
         "Manual intervention required"
         ) -join "`r`n"
     Log-Err 'fatal' $err_msg $($_.Exception.Message)
@@ -1434,13 +1434,13 @@ catch {
 #
 
 # Update pip of venv
-Write-Header "Step 11/16: update pip of venv $MY_VENV_DIR"
+Write-Header "Step 11/17: update pip of venv $MY_VENV_DIR"
 try {
     Invoke-Native python -m pip install --upgrade pip
 }
 catch {
     $err_msg = (
-        "Pip update failed at Step 10",
+        "Pip update failed at Step 11",
         "Manual intervention required"
         ) -join "`r`n"
     Log-Err 'fatal' $err_msg $($_.Exception.Message)
@@ -1449,21 +1449,34 @@ catch {
 
 
 # Install Qiskit in venv
-Write-Header "Step 12/16: install Qiskit in venv $MY_VENV_DIR"
+Write-Header "Step 12/17: install Qiskit in venv $MY_VENV_DIR"
 try {   
     Invoke-Native pip install -r $requirements_file
 }
 catch {
     $err_msg = (
-        "Installation of Qiskit in venv $MY_VENV_DIR failed at Step 11",
+        "Installation of Qiskit in venv $MY_VENV_DIR failed at Step 12",
         "Pip couldn't install the requirements_file",
         "Manual intervention required"
         ) -join "`r`n"
     Log-Err 'fatal' $err_msg $($_.Exception.Message)
 }
 
+# Install ipykernel module in venv
+Write-Header "Step 13/17: install ipykernel module in venv $MY_VENV_DIR"
+try {
+    Invoke-Native pip install ipykernel
+}
+catch {
+    $err_msg = (
+        "Installation of ipykernel module in venv $MY_VENV_DIR failed at Step 12",
+        "Manual intervention required"
+        ) -join "`r`n"
+    Log-Err 'fatal' $err_msg $($_.Exception.Message)
+}
+
 # Install Jupyter server in venv
-Write-Header "Step 13/16: install ipykernel kernel in venv $MY_VENV_DIR"
+Write-Header "Step 14/17: install ipykernel kernel in venv $MY_VENV_DIR"
 try {
     $args = "-m", "ipykernel", "install",
         "--user",
@@ -1480,7 +1493,7 @@ catch {
     Log-Err 'fatal' $err_msg $($_.Exception.Message)
 }
 
-Write-Header "Step 14/16: Write installer version in pyvenv.cfg"
+Write-Header "Step 15/17: Write installer version in pyvenv.cfg"
 
 try {
 $cfg_path = "$MY_VENV_DIR\pyvenv.cfg"
@@ -1496,7 +1509,7 @@ Add-Content $cfg_path "qiskit_windows_installer_version = $qiskit_windows_instal
 }
 
 # Test the installation
-Write-Header "Step 15/16: testing the installation in $MY_VENV_DIR"
+Write-Header "Step 16/17: testing the installation in $MY_VENV_DIR"
 #Test-symeng-Module
 try {
     Test-qiskit-Version
@@ -1522,7 +1535,7 @@ catch {
 } 
 
 
-Write-Header "Step 16/16: Open Visual Studio code with the notebook"
+Write-Header "Step 17/17: Open Visual Studio code with the notebook"
 try {
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/ket-q/qiskit_windows_installer/refs/heads/main/resources/notebook/IBM_account_setup.ipynb" -OutFile "$env:USERPROFILE\Downloads\IBM_account_setup.ipynb"
     Invoke-Native code --disable-workspace-trust 
