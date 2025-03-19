@@ -17,6 +17,8 @@ $LOG_FILE = Join-Path $LOG_DIR -ChildPath 'log.txt'
 # be used. Initially this flag is $false. It will be set to $true as soon
 # as the $LOG_FILE is known to exist.
 $log_up = $false
+$log_cache = ""
+$first_time_log_up= $true
 
 
 
@@ -65,14 +67,29 @@ Parameters:
     # Write to logfile
     if ( ($target -eq 'f') -or ($target -eq 'cf') ) {
         # Can only log if the logfile is in place
-        if ( $log_up ) {        
-            Add-content $LOG_FILE -value $msg
-        }
-        # else {
-        #    Write-Host "DISCARD $msg"
-        # }
+
+
+        if ($log_up) {
+
+            # If the log just got up, we need to write the buffer into it.
+            # On the first time this condition is true, add the content of $log_cache to $LOG_FILE.
+            
+            if ($global:first_time_log_up -eq $true) {                
+                Set-Content $LOG_FILE -Value $global:log_cache
+                $global:first_time_log_up = $false
+            }
+            
+            # Then add the new message
+            Add-Content $LOG_FILE -Value $msg
+        
+        } else {
+        
+            # Cache into a variable if the log isn't up yet
+            $global:log_cache += $msg + "`n"
+        }        
     }
 }
+
 
 
 function Write-Header {
@@ -84,27 +101,6 @@ function Write-Header {
     Output "====$fill===="
     Output "==  $msg  =="
     Output "====$fill===="
-}
-
-
-function Fatal-Error {
-    param(
-        [Parameter(Mandatory=$true, Position=1, HelpMessage="The error message to write")]
-        [string]$err_msg,
-
-        [Parameter(Mandatory = $true, Position = 2, HelpMessage = "Exit code of the program")]
-        [int]$err_val
-    )
-    $first = $true
-    ForEach ($line in $($err_msg -split "\r?\n|\r")) {
-        if ($first) {
-            Output "ERROR: $line"
-            $first = $false
-        } else {
-            Output "       $line"
-        }
-    }
-    Exit $err_val
 }
 
 
@@ -183,9 +179,59 @@ Parameters:
     Output $sep
 
     if (($firstArg -eq 'fatal') -and $have_error) {
-        # Terminate the script
+        
+        Write-Notice-Logfile
+
         Exit 1
+
     }
+}
+
+function Write-Notice-Logfile {
+
+    $msg = @"
+AN ERROR OCCURED DURING THE INSTALLATION.
+
+1. PLEASE CHECK that you are running the latest version of the Installer. 
+Link: https://github.com/ket-q/qiskit_windows_installer
+
+
+2. PLEASE ALSO CHECK the SUPPORT/TROUBLESHOOTING section on our github.
+Link: https://github.com/ket-q/qiskit_windows_installer?tab=readme-ov-file#-faq--support--troubleshooting
+
+
+3. If it keeps failing, SAVE THIS LOG FILE and SEND a mail to axelpetit@yonsei.ac.kr with the FILE ATTACHED to it. 
+
+Sorry for this, we will respond to you as fast as we can.
+
+        
+        
+"@
+        
+    if ($log_up) {
+        # Read the beginning of the file (as many lines as $msg has)
+        $linesToCheck = ($msg -split "`n").Count
+        $currentTop = Get-Content $LOG_FILE -TotalCount $linesToCheck
+    
+        # Compare the top of the file with $msg
+        if (($currentTop -join "`n").Trim() -ne $msg.Trim()) {
+            $existingContent = Get-Content $LOG_FILE
+            $msg | Set-Content $LOG_FILE
+            $existingContent | Add-Content $LOG_FILE
+        }
+        Invoke-Native notepad $LOG_FILE
+    } else { 
+        
+            $downloadsPath = [System.IO.Path]::Combine($env:USERPROFILE, 'Downloads', 'log.txt')
+            # Create and write to the new log file in Downloads
+            $msg | Set-Content -Path $downloadsPath
+            $global:log_cache | Add-Content -Path $downloadsPath
+            Invoke-Native notepad $downloadsPath
+        }
+        
+    
+    
+
 }
 
 
@@ -235,38 +281,64 @@ will be possible on this computer:
    requirements.txt file?
 #>
     # CPU architecture
-    $arch = $env:PROCESSOR_ARCHITECTURE
-    if ( $arch -ne 'AMD64' ) {
+
+    try {
+        $arch = $env:PROCESSOR_ARCHITECTURE
+        if ( $arch -ne 'AMD64' ) {
+            $err_msg = (
+                "The installer currently only supports the 'AMD64' architecture inside Check-Installation-Platform function",
+                "But this computer is of architecture '$arch'."
+                ) -join "`r`n"
+            Log-Err 'fatal' 'Check-Install-Platform' $err_msg
+    }
+    } catch {
         $err_msg = (
-            "The installer currently only supports the 'AMD64' architecture",
-            "But this computer is of architecture '$arch'."
+            "Error while checking processor architecture",
+            "Manual intervention required"
             ) -join "`r`n"
-        Log-Err 'fatal' 'Check-Install-Platform' $err_msg
+        Log-Err 'fatal' $err_msg $($_.Exception.Message)
     }
 
-    # Windows version
-    $ver_prop = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
-    $win_ver = (Get-ItemProperty $ver_prop).CurrentMajorVersionNumber
-    if ( ($win_ver -ne 10) -and ($win_ver -ne 11) ) {
+
+    try {
+        # Windows version
+        $ver_prop = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+        $win_ver = (Get-ItemProperty $ver_prop).CurrentMajorVersionNumber
+        if ( ($win_ver -ne 10) -and ($win_ver -ne 11) ) {
+            $err_msg = (
+                "The installer currently only supports Windows 10 and 11.",
+                "But this computer is running Windows version $win_ver."
+                ) -join "`r`n"
+            Log-Err 'fatal' 'Check-Install-Platform' $err_msg       
+        }
+    } catch {
         $err_msg = (
-            "The installer currently only supports Windows 10 and 11.",
-            "But this computer is running Windows version $win_ver."
+            "Error while checking Windows version inside Check-Installation-Platform function",
+            "Manual intervention required"
             ) -join "`r`n"
-        Log-Err 'fatal' 'Check-Install-Platform' $err_msg       
+        Log-Err 'fatal' $err_msg $($_.Exception.Message)
     }
 
-    # Free disk space
-    $req_space = 4GB
-    $free_space = (Get-PSDrive 'C').Free
-    if ( $free_space -lt $req_space ) {
-        $req_rnd = [math]::Round($req_space/1GB, 1)
-        $free_rnd = [math]::Round($free_space/1GB, 1)
+    try {
+        # Free disk space
+        $req_space = 4GB
+        $free_space = (Get-PSDrive 'C').Free
+        if ( $free_space -lt $req_space ) {
+            $req_rnd = [math]::Round($req_space/1GB, 1)
+            $free_rnd = [math]::Round($free_space/1GB, 1)
+            $err_msg = (
+                "The installer requires a minimum of ${req_rnd} GB of free disk space",
+                "on the C drive. But the C drive currently has only ${free_rnd} GB ",
+                "available. Please make space on the C drive, and try again."
+                ) -join "`r`n"
+            Log-Err $err_msg   
+        }
+    } catch {
         $err_msg = (
-            "The installer requires a minimum of ${req_rnd} GB of free disk space",
-            "on the C drive. But the C drive currently has only ${free_rnd} GB ",
-            "available. Please make space on the C drive, and try again."
+            "Error while checking disk space inside Check-Installation-Platform function",
+            "Manual intervention required"
             ) -join "`r`n"
-        Log-Err $err_msg   
+        Log-Err 'fatal' $err_msg $($_.Exception.Message)
     }
 }
 
@@ -355,21 +427,19 @@ function Download-File {
 
     Log-Status "Downloading $source_URL..."
 
-    # Use 'curl.exe' which is the Curl version provided on Win 10 and Win 11.
-    # (The command 'curl' internally maps to Invoke-WebRequest.)
-    # -L ... download across redirects
     try {
         Invoke-Native curl.exe --silent -L -o $target_name $source_URL
     }
     catch {
         $err_msg = (
-            "File download from $source_URL failed.",
+            "File download from $source_URL failed in Download-File function",
             "Manual check required."
-            ) -join "`r`n"
-        Log-Err 'fatal' 'file download attempt' $err_msg
+            ) -join "rn"
+        Log-Err 'fatal' $err_msg $($_.Exception.Message)
     }
-
+    
     Log-Status 'Download DONE'
+    
 }
 
 
@@ -380,17 +450,44 @@ function Install-VSCode {
     $VSCode_URL = 'https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-user'
 
     # Download VSCode
-    Log-Status 'Downloading VSCode installer'
-    Download-File $VSCode_URL $VSCode_installer_path
 
+    Log-Status 'Downloading VSCode installer'
+
+    try {
+    Download-File $VSCode_URL $VSCode_installer_path
+    }
+    catch {
+        $err_msg = (
+            "Download file of VS Code inside the Install-VScode function failed",
+            "Manual check required"
+            ) -join "`r`n"
+        Log-Err 'fatal' $err_msg $($_.Exception.Message) 
+    }
     # Install VSCode
     Log-Status 'Running VSCode installer'
     $unattended_args = '/VERYSILENT /MERGETASKS=!runcode'
+
+    try {
     Start-Process -FilePath $VSCode_installer_path -ArgumentList $unattended_args -Wait -Passthru
+    } catch{
+        $err_msg = (
+            "Installation of VScode insinde the Install-VScode  function failed",
+            "Manual check required"
+            ) -join "`r`n"
+        Log-Err 'fatal' $err_msg $($_.Exception.Message)
+    }
 
-    # Cleanup
+    try {
     Remove-Item $VSCode_installer_path
+    }
+    catch {
+        $err_msg = (
+        "Cleaning of VSCode_installer path failed inside Install-VScode function failed",
+        "Manual check required"
+        ) -join "`r`n"
+    Log-Err 'fatal' $err_msg $($_.Exception.Message)
 
+    }
     Log-Status 'DONE'
 }
 
@@ -403,7 +500,7 @@ function Install-VSCode-Extension {
             HelpMessage = 'Name of VSCode extension to install')]
         [string]$ext
     )
-    
+
     if ( $(@(code --list-extensions | ? { $_ -match $ext }).Count -ge 1) ) {
         Log-Status "VSCode extension $ext already installed"
         return
@@ -413,7 +510,7 @@ function Install-VSCode-Extension {
         Invoke-Native code --install-extension $ext
     }
     catch {
-        Log-Err 'fatal' "code extension $ext" $($_.Exception.Message)
+        Log-Err 'fatal' "VS Ccode extension $ext failed insidine Install-VSCode-Extension function" $($_.Exception.Message)
     }
 }
 
@@ -426,14 +523,23 @@ function Install-pyenv-win {
     $pyenv_installer_path = Join-Path ${env:TEMP} -ChildPath $pyenv_installer
     $pyenv_win_URL = 'https://raw.githubusercontent.com/pyenv-win/pyenv-win/master/pyenv-win/install-pyenv-win.ps1'
 
-    Download-File $pyenv_win_URL $pyenv_installer
+    try {
+        Download-File $pyenv_win_URL $pyenv_installer
+    } catch {
+        $err_msg = (
+            "Download-call error inside the Install-pyenv-win function",
+            'Manual check required.'
+            ) -join "`r`n"
+        Log-Err 'fatal' $err_msg $($_.Exception.Message)
+    }
+    
 
     Log-Status 'Installing pyenv-win'
     try {
         Invoke-Native "./${pyenv_installer}"
     }
     catch {
-        Log-Err 'fatal' 'pyenv-win installation' $($_.Exception.Message)
+        Log-Err 'fatal' "./{pyenv_installer} failed inside the Install-pyenv-win function" $($_.Exception.Message)
     }
 
     # Cleanup
@@ -455,7 +561,7 @@ function Check-pyenv-List {
         $versions = Invoke-Native pyenv install -l
     }
     catch {
-        Log-Err 'fatal' 'pyenv install -l' $($_.Exception.Message)
+        Log-Err 'fatal' 'pyenv install -l failed inside Check-pyenv-List function' $($_.Exception.Message)
     }
     # For the regexp match, the dots in the version string are meta-chars
     # that we need to escape:
@@ -560,7 +666,7 @@ Return value:
         $discard = Invoke-Native pyenv update
     }
     catch {
-        Log-Err 'fatal' 'pyenv update' $($_.Exception.Message)
+        Log-Err 'fatal' 'pyenv update failed inside the Lookup-pyenv-Cache function' $($_.Exception.Message)
     }
     # Update $stamp with new timestamp
     $now.ToString($format) | Out-File -FilePath $stamp
@@ -606,7 +712,7 @@ Import the qiskit version number, and compare it to the expected version.
     if ( $v -eq $qiskit_version ) {
         Log-Status "Detected Qiskit version number $v"
     } else {
-        Log-Err 'warn' 'Qiskit version number check' 'Failed'
+        Log-Err 'warn' 'Qiskit version number check failed' $($_.Exception.Message)
     }
 }
 
@@ -968,7 +1074,7 @@ function Setup-Qiskit {
     $requirements_file = 'requirements_'+ $qwi_vstr +'.txt'
     #$requirements_file = "symeng_requirements.txt"
 
-    $req_URL = "https://raw.githubusercontent.com/ket-q/qiskit_windows_installer/refs/heads/main/resources/config/${requirements_file}"
+    $req_URL = "https://raw.githubusercontent.com/ket-q/qiskit_windows_installer/refs/heads/main/ressources/config/${requirements_file}"
 
     return $qiskit_version, $qwi_vstr, $requirements_file, $req_URL
 }
@@ -984,12 +1090,15 @@ try {
     Set-ExecutionPolicy Bypass -Scope Process -Force
 }
 catch {
-    Log-Err 'fatal' 'install script execution policy' $($_.Exception.Message)
+    Log-Err 'fatal' 'Install script execution policy failed at Step 1' $($_.Exception.Message)
 }
 
 Write-Header 'Step 2/16: Check installation platform'
-Check-Installation-Platform
-
+try {
+    Check-Installation-Platform
+} catch {
+    Log-Err 'fatal' "Error when calling Check-Installation-Platform at Step 2" $($_.Exception.Message)
+}
 #
 # Get software license checked by user
 #
@@ -1000,47 +1109,81 @@ Write-Header 'Step 3/16: Config window (licences and qiskit version)'
 try {
 
     $result, $qiskit_output = Config-window
-
-    $qiskit_version, $qwi_vstr, $requirements_file, $req_URL = Setup-Qiskit $qiskit_output
     
-
-
-    if (!$result){ #User didn't accept the software Licence, program should stop
-    $err_msg = (
-        'User refused the software licence',
-        'Manual check required.'
-        ) -join "`r`n"
-    Log-Err 'fatal' 'Licence acceptation' $err_msg
-    }
-} 
+}
 catch {
 
     $err_msg = (
-        "Unable to open licence windows",
+        "Unable to open config windows in Step 3",
         "Manual intervention required."
         ) -join "`r`n"
-    Fatal-Error $err_msg 1  
+    Log-Err 'fatal' $err_msg $($_.Exception.Message) 
 
 }
+
+if (!$result){ #User didn't accept the software Licence, program should stop
+$err_msg = (
+    'User refused the software licences or closed the window in Step 3',
+    'Manual check required.'
+    ) -join "`r`n"
+Log-Err 'fatal' $err_msg
+}
+
+try {
+    $qiskit_version, $qwi_vstr, $requirements_file, $req_URL = Setup-Qiskit $qiskit_output
+    
+} catch {
+    $err_msg = (
+        "Unable to setup qiskit Step 3",
+        "Manual intervention required."
+        ) -join "`r`n"
+    Log-Err 'fatal' $err_msg $($_.Exception.Message) 
+}
+
+
+
+
 
 #
 # Set up installer root directory structure
 #
 Write-Header 'Step 4/16: set up installer root folder structure'
-if (!(Test-Path $ROOT_DIR)){
-    New-Item -Path $ROOT_DIR -ItemType Directory
+
+try {
+    if (!(Test-Path $ROOT_DIR)){
+        New-Item -Path $ROOT_DIR -ItemType Directory
+    }
+
+} catch {
+
+    $err_msg = (
+        "Root folder setup error. Can't check $ROOT_DIR in Step 4",
+        "Manual intervention required."
+        ) -join "`r`n"
+    Log-Err 'fatal' $err_msg $($_.Exception.Message) 
+
 }
 
-$qinst_root_obj = get-item $ROOT_DIR
+try {
+    $qinst_root_obj = get-item $ROOT_DIR
 
-# Check that $ROOT_DIR is a folder and not a file. Required if
-# the name already pre-existed in the filesystem.
-if ( !($qinst_root_obj.PSIsContainer) ) {
+    # Check that $ROOT_DIR is a folder and not a file. Required if
+    # the name already pre-existed in the filesystem.
+    if ( !($qinst_root_obj.PSIsContainer) ) {
+        $err_msg = (
+            'Setup installer root folder structure failed in Step 4',
+            "$ROOT_DIR is not a folder.",
+            "Please move $ROOT_DIR out of the way and re-run the script."
+            ) -join "`r`n"
+            Log-Err 'fatal' $err_msg
+    }
+} catch {
     $err_msg = (
-        "$ROOT_DIR is not a folder.",
-        "Please move $ROOT_DIR out of the way and re-run the script."
+        'Root folder setup failed in Step 4',
+        "Can't check qinst_root_obj",
+        "Manual intervention required."
         ) -join "`r`n"
-    Fatal-Error $err_msg 1
+    Log-Err 'fatal' $err_msg $($_.Exception.Message) 
 }
 
 # Create log directory
@@ -1059,10 +1202,11 @@ try {
 }
 catch {
     $err_msg = (
+        "'Setup of log folder failed in Step 4a.", 
         "Unable to set up $LOG_DIR.",
         "Manual intervention required."
         ) -join "`r`n"
-    Log-Err 'fatal' 'setup of log folder' $err_msg  
+    Log-Err 'fatal' $err_msg  $($_.Exception.Message) 
 }
 
 # Create the enclave folder $ROOT_DIR\$qwi_vstr. This is from where we
@@ -1077,15 +1221,12 @@ try {
 }
 catch {
     $err_msg = (
+        "Setup of enclave folder failed in Step 4b",
         "Unable to cd into $ENCLAVE_DIR.",
         "Manual intervention required."
         ) -join "`r`n"
-    Fatal-Error $err_msg 1
+    Log-Err 'fatal' $err_msg $($_.Exception.Message) 
 }
-
-
-
-
 
 #
 # VSCode
@@ -1098,10 +1239,10 @@ if ( !(Get-Command code -ErrorAction SilentlyContinue) ) {
     # Ensure VScode installation succeeded:
     if ( !(Get-Command code -ErrorAction SilentlyContinue) ) {
         $err_msg = (
-            'VSCode installation failed.',
+            'VSCode installation failed in Step 5',
             'Manual check required.'
             ) -join "`r`n"
-        Log-Err 'fatal' 'VSCode installation' $err_msg
+        Log-Err 'fatal' $err_msg
     } else {
         Log-Status 'VSCode installation succeeded'
     }
@@ -1127,10 +1268,10 @@ if ( !(Get-Command pyenv -ErrorAction SilentlyContinue) ) {
     # Ensure pyenv-win installation succeeded:
     if ( !(Get-Command pyenv -ErrorAction SilentlyContinue) ) {
         $err_msg = (
-            'pyenv-win installation failed.',
+            'pyenv-win installation failed inside Step 6',
             'Manual check required.'
             ) -join "`r`n"
-        Log-Err 'fatal' 'pyenv-win installation' $err_msg
+        Log-Err 'fatal' $err_msg $($_.Exception.Message)  
     } else {
         Log-Status 'pyenv-win installation succeeded'
     }
@@ -1150,11 +1291,11 @@ if ( !(Get-Command pyenv -ErrorAction SilentlyContinue) ) {
 Write-Header "Step 7/16: Check if pyenv supports Python $python_version"
 if ( !(Lookup-pyenv-Cache $python_version $ROOT_DIR) ) {
     $err_msg = (
+        "availability-check of Python failed in Step 7",
         "Requested Python version $python_version not available with pyenv.",
-        "Please check manually on Python.org if you believe that Python",
-        "version $python_version should be available."
+        "Manual check required"
         ) -join "`r`n"
-    Log-Err 'fatal' "availability-check of Python $python_version" $err_msg    
+    Log-Err 'fatal' $err_msg $($_.Exception.Message)      
 }
 
 Write-Header "Step 8/16: Set up Python $python_version for venv"
@@ -1163,36 +1304,58 @@ try {
     $err = Invoke-Native pyenv local $python_version
 }
 catch {
-    Log-Err 'fatal' 'pyenv Python setup in enclave' $($_.Exception.Message)   
+    Log-Err 'fatal' 'Python installation for pyenv failed in Step 8' $($_.Exception.Message)   
 }
 
+try {
 # Make sure that user's '.virtualenvs' folder exists or otherwise create it.
 $DOT_VENVS_DIR = Join-Path ${env:USERPROFILE} -ChildPath '.virtualenvs'
 if (!(Test-Path $DOT_VENVS_DIR)){
     New-Item -Path $DOT_VENVS_DIR -ItemType Directory
 }
 
-$dot_venvs_dir_obj = get-item $DOT_VENVS_DIR
-
-# Check that '.virtualenvs' is a folder and not a file. Required if
-# the name already pre-existed in the filesystem.
-if ( !($dot_venvs_dir_obj.PSIsContainer) ) {
+} catch {
     $err_msg = (
-        "$DOT_VENVS_DIR is not a folder.",
-        "Please move $DOT_VENVS_DIR out of the way and re-run the script."
+        "Check that .virtualenvs exists failed in Step 8",
+        "Manual check required"
         ) -join "`r`n"
-    Log-Err 'fatal' '.virtualenvs check' $err_msg
+    Log-Err 'fatal' $err_msg $($_.Exception.Message)
+}
+try {
+    $dot_venvs_dir_obj = get-item $DOT_VENVS_DIR
+} catch {
+    $err_msg = (
+        "Can't get-item DOT_VENVS_DIR in Step 8",
+        "Manual check required"
+        ) -join "`r`n"
+    Log-Err 'fatal' $err_msg $($_.Exception.Message)
 }
 
+try {
+    # Check that '.virtualenvs' is a folder and not a file. Required if
+    # the name already pre-existed in the filesystem.
+    if ( !($dot_venvs_dir_obj.PSIsContainer) ) {
+        $err_msg = (
+            "$DOT_VENVS_DIR is not a folder.",
+            "Please move $DOT_VENVS_DIR out of the way and re-run the script."
+            ) -join "`r`n"
+        Log-Err 'fatal' '.virtualenvs check' $err_msg
+    }
+} catch {
+    $err_msg = (
+        "Check that .virtualenvs exists failed in Step 8",
+        "Manual check required"
+        ) -join "`r`n"
+    Log-Err 'fatal' $err_msg $($_.Exception.Message)
+}
 # Test whether a venv of name $qwi_vstr already exists and delete it.
 # Note 1: VSCode etc. should not use the venv in that moment, but we don't
 # actually check this.
 # FIXME: If a Jupyter notebook is open, then the rm command on the venv
 #        will fail.
 
-$MY_VENV_DIR = Join-Path ${DOT_VENVS_DIR} -ChildPath $qwi_vstr
-
 try {
+$MY_VENV_DIR = Join-Path ${DOT_VENVS_DIR} -ChildPath $qwi_vstr
     if (Test-Path $MY_VENV_DIR) {
         # A venv of that name seems to exist already -> remove
         #rm -R $MY_VENV_DIR
@@ -1201,12 +1364,11 @@ try {
     }
 }
 catch {
-    $err_1 = $($_.Exception.Message)
-    $err_0 = (
-        "Unable to remove existing venv.",
+    $err_msg = (
+        "Unable to remove existing venv inside Step 8",
         "Path/venv: $MY_VENV_DIR"
         ) -join "`r`n"
-    Log-Err 'fatal' $err_0 $err_1
+    Log-Err 'fatal' $err_msg $($_.Exception.Message)
 }
 
 # Create and enter enclave folder $ROOT_DIR\$qwi_vstr. This is from where we
@@ -1223,14 +1385,35 @@ catch {
         "Unable to cd into $ENCLAVE_DIR.",
         "Manual intervention required."
         ) -join "`r`n"
-    Log-Err 'fatal' 'cd into enclave folder' $err_msg  
+    Log-Err 'fatal' $err_msg $($_.Exception.Message)
 }
 
+Write-Header "Step 9/16: Download $requirements_file from $req_URL"
+
+
+try {
 # Download the requirements.txt file for the new venv
 Download-File $req_URL ${requirements_file}
 
+if ((Get-Content $requirements_file -TotalCount 1).Substring(0,3) -eq '404') {
+    $err_msg = (
+        "The download file $requirements_file contains a 404 error at Step 9",
+        "Manual intervention required"
+        ) -join "`r`n"
+    Log-Err 'fatal' $err_msg "404 error"
+}
+
+} catch {
+    $err_msg = (
+        "Download of requirements file failed at Step 8",
+        "Manual intervention required"
+        ) -join "`r`n"
+    Log-Err 'fatal' $err_msg $($_.Exception.Message)
+}
+
+
 # Create venv
-Write-Header "Step 9/16: Set up venv $MY_VENV_DIR"
+Write-Header "Step 10/16: Set up venv $MY_VENV_DIR"
 try {
     # create venv
     Invoke-Native pyenv exec python -m venv $MY_VENV_DIR
@@ -1238,7 +1421,11 @@ try {
     Invoke-Native "${MY_VENV_DIR}\Scripts\activate.ps1"
 }
 catch {
-    Log-Err 'fatal' 'setting up venv' $($_.Exception.Message)
+    $err_msg = (
+        "Setting up venv failed at Step 9",
+        "Manual intervention required"
+        ) -join "`r`n"
+    Log-Err 'fatal' $err_msg $($_.Exception.Message)
 }
 
 #
@@ -1247,26 +1434,19 @@ catch {
 #
 
 # Update pip of venv
-Write-Header "Step 10/16: update pip of venv $MY_VENV_DIR"
+Write-Header "Step 11/16: update pip of venv $MY_VENV_DIR"
 try {
     Invoke-Native python -m pip install --upgrade pip
 }
 catch {
-    Log-Err 'fatal' 'Update pip of venv $MY_VENV_DIR' $($_.Exception.Message)
+    $err_msg = (
+        "Pip update failed at Step 10",
+        "Manual intervention required"
+        ) -join "`r`n"
+    Log-Err 'fatal' $err_msg $($_.Exception.Message)
 }
 
-# Install ipykernel module in venv
-Write-Header "Step 11/16: install ipykernel module in venv $MY_VENV_DIR"
-try {
-    Invoke-Native pip install ipykernel
-}
-catch {
-    $err = $($_.Exception.Message)
-    $err_args = 'fatal',
-        'ipykernel module installation in venv $MY_VENV_DIR',
-        $err
-    Log-Err @err_args
-}
+
 
 # Install Qiskit in venv
 Write-Header "Step 12/16: install Qiskit in venv $MY_VENV_DIR"
@@ -1274,11 +1454,12 @@ try {
     Invoke-Native pip install -r $requirements_file
 }
 catch {
-    $err = $($_.Exception.Message)
-    $err_args = 'fatal',
-        'Qiskit installation in venv $MY_VENV_DIR',
-        $err
-    Log-Err @err_args
+    $err_msg = (
+        "Installation of Qiskit in venv $MY_VENV_DIR failed at Step 11",
+        "Pip couldn't install the requirements_file",
+        "Manual intervention required"
+        ) -join "`r`n"
+    Log-Err 'fatal' $err_msg $($_.Exception.Message)
 }
 
 # Install Jupyter server in venv
@@ -1292,29 +1473,52 @@ try {
     Invoke-Native python @args
 }
 catch {
-    $err = $($_.Exception.Message)
-    $err_args = 'fatal',
-        'ipykernel installation in venv $MY_VENV_DIR',
-        $err
-    Log-Err @err_args
+    $err_msg = (
+        "Installation of ipykernel in venv $MY_VENV_DIR failed at Step 12",
+        "Manual intervention required"
+        ) -join "`r`n"
+    Log-Err 'fatal' $err_msg $($_.Exception.Message)
 }
 
 Write-Header "Step 14/16: Write installer version in pyvenv.cfg"
 
+try {
 $cfg_path = "$MY_VENV_DIR\pyvenv.cfg"
 Add-Content $cfg_path "qiskit_windows_installer_version = $qiskit_windows_installer_version"
+} catch {
+
+    $err_msg = (
+        "Writing of installer version in pyvenv.cfg failed at Step 13",
+        "Manual intervention required"
+        ) -join "`r`n"
+    Log-Err 'warn' $err_msg $($_.Exception.Message)
+    
+}
 
 # Test the installation
 Write-Header "Step 15/16: testing the installation in $MY_VENV_DIR"
 #Test-symeng-Module
-Test-qiskit-Version
+try {
+    Test-qiskit-Version
+} catch {
+    $err_msg = (
+        "Error for Test-Qiskit-version function at Step 14",
+        "Manual intervention required"
+        ) -join "`r`n"
+    Log-Err 'warn' $err_msg $($_.Exception.Message)
+}
+
 
 # Deactivate the Python venv
 try {
    Invoke-Native deactivate
 }
 catch {
-    Log-Err 'fatal' $($_.Exception.Message)
+    $err_msg = (
+        "Error when deactivating the python venv at Step 14",
+        "Manual intervention required"
+        ) -join "`r`n"
+    Log-Err 'fatal' $err_msg $($_.Exception.Message)
 } 
 
 
@@ -1328,7 +1532,7 @@ try {
     
 }
 catch {
-    Log-Err 'fatal' $($_.Exception.Message)
+    Log-Err 'fatal' 'Error during VS code opening' $($_.Exception.Message)
 }
 
 Log-Status "INSTALLATION DONE"
