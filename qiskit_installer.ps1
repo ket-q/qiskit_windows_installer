@@ -446,7 +446,7 @@ function Install-VSCode {
     $VSCode_installer = 'vscode_installer.exe'
     $VSCode_installer_path = Join-Path ${env:TEMP} -ChildPath $VSCode_installer
     # Download the local installer by appending '-user' to the download URL:
-    $VSCode_URL = 'http://code.visualstudio.com/sha/download?build=stable&os=win32-x64-user'
+    $VSCode_URL = 'https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-user'
 
     # Download VSCode
 
