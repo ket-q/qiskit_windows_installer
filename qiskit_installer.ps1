@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
 $qiskit_windows_installer_version = '0.1.0'
-$python_version = '3.12.9' # 3.13 not working because ray requires Python 3.12
+$python_version = '3.10.11' # 3.13 not working because ray requires Python 3.12
 
 
 # Top-level folder of installer to keep files other than the venvs:
@@ -426,9 +426,8 @@ function Download-File {
     )
 
     Log-Status "Downloading $source_URL..."
-
     try {
-        Invoke-Native curl.exe --silent -L -o $target_name $source_URL
+	Invoke-Native curl.exe --noproxy '*' --silent -L -o $target_name $source_URL
     }
     catch {
         $err_msg = (
@@ -447,7 +446,7 @@ function Install-VSCode {
     $VSCode_installer = 'vscode_installer.exe'
     $VSCode_installer_path = Join-Path ${env:TEMP} -ChildPath $VSCode_installer
     # Download the local installer by appending '-user' to the download URL:
-    $VSCode_URL = 'https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-user'
+    $VSCode_URL = 'http://code.visualstudio.com/sha/download?build=stable&os=win32-x64-user'
 
     # Download VSCode
 
@@ -532,6 +531,14 @@ function Install-pyenv-win {
             ) -join "`r`n"
         Log-Err 'fatal' $err_msg $($_.Exception.Message)
     }
+
+    $pyvenv_test_path = Join-Path ${env:USERPROFILE} -ChildPath '.pyenv'
+
+
+    if ((Test-Path $pyvenv_test_path)) { 
+        Remove-Item -Recurse -Force $pyvenv_test_path
+    }
+
     
 
     Log-Status 'Installing pyenv-win'
@@ -685,7 +692,7 @@ installation failures.
 #>
     Log-Status 'Testing the symengine Python module'
     try {
-        Invoke-Native python -c 'import symengine'
+        Invoke-Native python -c "import symengine"
         Log-Status 'PASSED'
     }
     catch {
@@ -1433,7 +1440,7 @@ catch {
 # PATH now includes our venv
 #
 
-# Update pip of venv
+#Update pip of venv
 Write-Header "Step 11/17: update pip of venv $MY_VENV_DIR"
 try {
     Invoke-Native python -m pip install --upgrade pip
@@ -1443,8 +1450,8 @@ catch {
         "Pip update failed at Step 11",
         "Manual intervention required"
         ) -join "`r`n"
-    Log-Err 'fatal' $err_msg $($_.Exception.Message)
-}
+    Log-Err 'warn' $err_msg $($_.Exception.Message)
+} 
 
 
 
@@ -1510,8 +1517,9 @@ Add-Content $cfg_path "qiskit_windows_installer_version = $qiskit_windows_instal
 
 # Test the installation
 Write-Header "Step 16/17: testing the installation in $MY_VENV_DIR"
-#Test-symeng-Module
+Test-symeng-Module
 try {
+    Invoke-Native "${MY_VENV_DIR}\Scripts\activate.ps1"
     Test-qiskit-Version
 } catch {
     $err_msg = (
