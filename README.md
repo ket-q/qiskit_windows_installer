@@ -14,7 +14,7 @@
 
 ##  📍 What is QIWI ?
 
-QIWI, the **Q**uiskit **I**nstaller for **WI**ndows, will set up Qiskit and a local copy of Visual Studio Code (VS Code) on your computer, with a ready-to-use Python virtual environment for Jupyter notebooks. After the installation, a Jupyter notebook
+QIWI, the **Q**iskit **I**nstaller for **WI**ndows, will set up Qiskit and a local copy of Visual Studio Code (VS Code) on your computer, with a ready-to-use Python virtual environment for Jupyter notebooks. After the installation, a Jupyter notebook
 walks the user through the initial setup on the IBM Quantum Platform.
 
 <br />

@@ -468,7 +468,7 @@ function Install-VSCode {
 
     try {
     Start-Process -FilePath $VSCode_installer_path -ArgumentList $unattended_args -Wait -Passthru
-    } catch{
+    } catch {
         $err_msg = (
             "Installation of VScode insinde the Install-VScode  function failed",
             "Manual check required"
@@ -731,7 +731,7 @@ $window = New-Object System.Windows.Window
 $window.Title = "Qiskit Windows Installer"
 $window.Width = 900
 $window.Height = 800
-$window.Background = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(35, 35, 35))  # Light black
+$window.Background = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(35, 35, 35))  
 
 
 
@@ -749,8 +749,8 @@ $bitmap.EndInit()
 
 # Set the source of the Image control
 $logoBlock.Source = $bitmap
-$logoBlock.Width = 750  # Adjust width as needed
-$logoBlock.Height = 250 # Adjust height as needed
+$logoBlock.Width = 750  
+$logoBlock.Height = 250 
 
 
 
@@ -760,11 +760,11 @@ $textBlock = New-Object System.Windows.Controls.TextBlock
 $textBlock.Text = "The Qiskit Windows Installer will install the following software packages on your computer."
 $textBlock.TextWrapping = [System.Windows.TextWrapping]::Wrap
 $textBlock.Margin = [System.Windows.Thickness]::new(-20,-70,10,0)
-$textBlock.FontSize = 20  # Reduced font size
+$textBlock.FontSize = 20  
 $textBlock.HorizontalAlignment = "Center"
 $textBlock.FontStyle = [System.Windows.FontStyles]::Italic
-$textBlock.FontFamily = "Segoe UI"  # Modern font
-$textBlock.Foreground = [System.Windows.Media.Brushes]::White  # White text
+$textBlock.FontFamily = "Segoe UI"  
+$textBlock.Foreground = [System.Windows.Media.Brushes]::White  
 
 
 # Notice TextBlock
@@ -859,13 +859,12 @@ function Create-RoundedButton {
     $button.Width = 150
     $button.Height = 50
     $button.FontSize = 22
-    $button.FontWeight = "Bold"  # Bold text
-    $button.FontFamily = "Segoe UI"  # Modern font
+    $button.FontWeight = "Bold"  
+    $button.FontFamily = "Segoe UI"  
     $button.Background = [System.Windows.Media.Brushes]::$color
-    $button.Foreground = [System.Windows.Media.Brushes]::White  # White text
+    $button.Foreground = [System.Windows.Media.Brushes]::White  
     $button.BorderBrush = $color
 
-    # Center the button within its container (prevent stretching)
     $button.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
     $button.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
 
@@ -935,8 +934,8 @@ $buttonProceed.IsEnabled = $false
 $textQiskit = New-Object System.Windows.Controls.TextBlock
 $textQiskit.TextWrapping = [System.Windows.TextWrapping]::Wrap
 $textQiskit.Margin = [System.Windows.Thickness]::new(10,0,30,0)
-$textQiskit.FontSize = 20  # Smaller font size
-$textQiskit.FontFamily = "Segoe UI"  # Modern font
+$textQiskit.FontSize = 20  
+$textQiskit.FontFamily = "Segoe UI"  
 $textQiskit.FontWeight = "Bold"
 
 # First part - normal white text
@@ -1106,9 +1105,7 @@ try {
 } catch {
     Log-Err 'fatal' "Error when calling Check-Installation-Platform at Step 2" $($_.Exception.Message)
 }
-#
-# Get software license checked by user
-#
+
 
 Write-Header 'Step 3/17: Config window (licences and qiskit version)'
 
@@ -1116,7 +1113,6 @@ Write-Header 'Step 3/17: Config window (licences and qiskit version)'
 try {
 
     $result, $qiskit_output = Config-window
-    
 }
 catch {
 
