@@ -1,0 +1,10 @@
+qiskit[visualization]==1.3.2
+symengine==0.13.0  # pinned because v. 0.14 not working due to DLL load bug
+qiskit-ibm-runtime>=0.35.0
+qiskit-aer
+qiskit-ibm-transpiler
+qiskit-serverless
+qiskit-ibm-catalog
+networkx
+colorama
+jupyter
