@@ -7,7 +7,7 @@
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-$QISKIT_WINDOWS_INSTALLER_VERSION = '0.1.1'
+$QISKIT_WINDOWS_INSTALLER_VERSION = '0.1.2'
 $PYTHON_VERSION = '3.12.2' # 3.13 not working because ray requires Python 3.12
 
 # Minimum required version for Microsoft Visual C++ Redistributable (MVCR)
@@ -655,7 +655,7 @@ function Install-pyenv-win {
 
     Log-Status 'Downloading pyenv-win'
 
-    $pyenv_installer = 'install-pyenv-win.ps1'
+    $pyenv_installer = 'install_pyenv_win.ps1'
     $pyenv_installer_path = Join-Path ${env:TEMP} -ChildPath $pyenv_installer
     $pyenv_win_URL = 'https://raw.githubusercontent.com/pyenv-win/pyenv-win/master/pyenv-win/install-pyenv-win.ps1'
 
@@ -688,7 +688,7 @@ function Install-pyenv-win {
 
     Log-Status 'Installing pyenv-win'
     try {
-        Invoke-Native "./${pyenv_installer}"
+        & "${pyenv_installer_path}"
     }
     catch {
         Log-Err 'fatal' "./{pyenv_installer} failed inside the Install-pyenv-win function" $($_.Exception.Message)
@@ -696,10 +696,10 @@ function Install-pyenv-win {
 
     # Cleanup
     try {
-        Remove-Item $pyenv_installer
+        Remove-Item $pyenv_installer_path
     } catch {
         $err_msg = (
-                "Error removing $pyenv_installer inside the Install-pyenv-win function",
+                "Error removing $pyenv_installer_path inside the Install-pyenv-win function",
                 'Manual check required.'
                 ) -join "`r`n"
         Log-Err 'fatal' $err_msg $($_.Exception.Message) 
