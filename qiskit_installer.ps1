@@ -7,7 +7,7 @@
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-$QISKIT_WINDOWS_INSTALLER_VERSION = '0.1.2'
+$QISKIT_WINDOWS_INSTALLER_VERSION = '0.1.3'
 $PYTHON_VERSION = '3.12.2' # 3.13 not working because ray requires Python 3.12
 
 # Minimum required version for Microsoft Visual C++ Redistributable (MVCR)
@@ -197,8 +197,6 @@ one or more error variables
         
         Write-Notice-Logfile
 
-        Exit 1
-
     }
 }
 
@@ -217,11 +215,13 @@ AN ERROR OCCURED DURING THE INSTALLATION.
 Link: https://github.com/ket-q/qiskit_windows_installer
 
 
-2. PLEASE ALSO CHECK the SUPPORT/TROUBLESHOOTING section on our github.
+2. PLEASE ALSO CHECK the SUPPORT/TROUBLESHOOTING section on our GitHub repository.
 Link: https://github.com/ket-q/qiskit_windows_installer?tab=readme-ov-file#-faq--support--troubleshooting
 
 
-Sorry for this, we will respond to you as fast as we can.
+We apologize for the possible inconvenience. 
+You will find the details of the installation process in this log file.
+When sharing this log file with others please be aware that it contains certain private information such as your user ID.
 
         
         
@@ -272,7 +272,7 @@ Parameters:
     )
     
     foreach ($statusVar in $statusVars) {
-        Output $statusVar
+       Output $statusVar
     }
 }
 
@@ -491,7 +491,6 @@ function Check-MVCR {
                     $InstalledVersion = [System.Version]$VersionString   
 
                     if ($InstalledVersion -ge $MVCR_min_version) {
-                        Log-Status "Installed VC++ version ($InstalledVersion) is up-to-date."
                         return [MVCRStatus]::UpToDate
                     }
                 }
@@ -529,52 +528,88 @@ function Uninstall-MVCR {
 function Install-MVCR {
 
     # Function to install Microsoft Visual C++ Redistributable and resolve SYMENGINE dependency
+    # x64 Installation
+    $MVCR_URL_x64 = "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+    $MVCR_Installer_Path_x64 = "$env:TEMP\vc_redist.x64.exe"
 
-
-    $MVCR_URL = "https://aka.ms/vs/17/release/vc_redist.x64.exe"
-    $MVCR_Installer_Path = "$env:TEMP\vc_redist.x64.exe"
-
-
-
-    Log-Status 'Downloading Microsoft Visual C++ Redistributable installer'
-
-    # Download the installer
+    Log-Status 'Downloading Microsoft Visual C++ Redistributable x64 installer'
     try {
-    Download-File $MVCR_URL $MVCR_Installer_Path
+        Download-File $MVCR_URL_x64 $MVCR_Installer_Path_x64
     } catch {
         $err_msg = (
-            "Download file of Visual C++ inside the Install-MVCR function failed",
+            "Download file of MVCR x64 failed",
             "Manual check required"
-            ) -join "`r`n"
+        ) -join "`r`n"
         Log-Err 'fatal' $err_msg $($_.Exception.Message)
     }
 
-    # Run the installer silently
     try {
-    $process = Start-Process -FilePath $MVCR_Installer_Path -ArgumentList "/quiet /norestart" -Verb RunAs -PassThru -Wait
+        $process = Start-Process -FilePath $MVCR_Installer_Path_x64 -ArgumentList "/quiet /norestart" -Verb RunAs -PassThru -Wait
     } catch {
         $err_msg = (
-            "Installation failed inside the Install-MVCR function",
+            "Installation of MVCR x64 failed",
             "Manual check required"
-            ) -join "`r`n"
+        ) -join "`r`n"
         Log-Err 'fatal' $err_msg $($_.Exception.Message)
     }
 
-    if ($process.ExitCode -ne 0) {
-        Log-Err 'fatal' "Error inside Install-MVCR function" "User refused to give admin rights to install Visual C++"
+    if ($process.ExitCode -eq 3010) {
+        Log-Status "MVCR installed successfully, but a reboot may be required (Exit Code 3010)"
+    } elseif ($process.ExitCode -ne 0) {
+        Log-Err 'fatal' "Error during MVCR x64 installation" "Code Error: $($process.ExitCode)"
     }
 
-
-    # Remove the installer after installation
     try {
-    Remove-Item -Path $MVCR_Installer_Path -Force
+        Remove-Item -Path $MVCR_Installer_Path_x64 -Force
     } catch {
         $err_msg = (
-            "Couldn't remove installer in $MVCR_Installer_Path",
+            "Couldn't remove MVCR x64 installer",
             "Manual check required"
-            ) -join "`r`n"
+        ) -join "`r`n"
         Log-Err 'warn' $err_msg $($_.Exception.Message)
     }
+
+    # x86 Installation
+    $MVCR_URL_x86 = "https://aka.ms/vs/17/release/vc_redist.x86.exe"
+    $MVCR_Installer_Path_x86 = "$env:TEMP\vc_redist.x86.exe"
+
+    Log-Status 'Downloading Microsoft Visual C++ Redistributable x86 installer'
+    try {
+        Download-File $MVCR_URL_x86 $MVCR_Installer_Path_x86
+    } catch {
+        $err_msg = (
+            "Download file of MVCR x86 failed",
+            "Manual check required"
+        ) -join "`r`n"
+        Log-Err 'fatal' $err_msg $($_.Exception.Message)
+    }
+
+    try {
+        $process = Start-Process -FilePath $MVCR_Installer_Path_x86 -ArgumentList "/quiet /norestart" -Verb RunAs -PassThru -Wait
+    } catch {
+        $err_msg = (
+            "Installation of MVCR x86 failed",
+            "Manual check required"
+        ) -join "`r`n"
+        Log-Err 'fatal' $err_msg $($_.Exception.Message)
+    }
+
+    if ($process.ExitCode -eq 3010) {
+        Log-Status "MVCR x86 installed successfully, but a reboot may be required (Exit Code 3010)"
+    } elseif ($process.ExitCode -ne 0) {
+        Log-Err 'fatal' "Error during MVCR x86 installation" "Code Error: $($process.ExitCode)"
+    }
+
+    try {
+        Remove-Item -Path $MVCR_Installer_Path_x86 -Force
+    } catch {
+        $err_msg = (
+            "Couldn't remove MVCR x86 installer",
+            "Manual check required"
+        ) -join "`r`n"
+        Log-Err 'warn' $err_msg $($_.Exception.Message)
+    }
+
 
 }
 
@@ -604,7 +639,7 @@ function Install-VSCode {
     $unattended_args = '/VERYSILENT /MERGETASKS=desktopicon,addtopath,!runcode'
 
     try {
-        Start-Process -FilePath $VSCode_installer_path -ArgumentList $unattended_args -Wait -Passthru
+        Start-Process -FilePath $VSCode_installer_path -ArgumentList $unattended_args -Wait -Passthru  
     } catch {
         $err_msg = (
             "Installation of VScode insinde the Install-VScode  function failed",
@@ -688,7 +723,7 @@ function Install-pyenv-win {
 
     Log-Status 'Installing pyenv-win'
     try {
-        & "${pyenv_installer_path}"
+        & "${pyenv_installer_path}" 
     }
     catch {
         Log-Err 'fatal' "./{pyenv_installer} failed inside the Install-pyenv-win function" $($_.Exception.Message)
@@ -717,7 +752,7 @@ function Check-pyenv-List {
         [string]$ver
     )
     try {
-        $versions = Invoke-Native pyenv install -l
+        $versions = & pyenv install -l
     }
     catch {
         Log-Err 'fatal' 'pyenv install -l failed inside Check-pyenv-List function' $($_.Exception.Message)
@@ -887,9 +922,7 @@ function Setup-Qiskit {
         [string]$qiskit_output
     )
 
-    if ($qiskit_output -eq "qiskit_1.4.2 (latest)") {
-        $qiskit_output = "qiskit_1.4.2"
-    }
+    $qiskit_output = $qiskit_output -replace '\s*\(latest\)$', ''
 
     $qiskit_version = $qiskit_output.Replace("qiskit_", "")
 
@@ -915,7 +948,7 @@ function Config-window{
     $window = New-Object System.Windows.Window
     $window.Title = "Qiskit Windows Installer"
     $window.Width = 900
-    $window.Height = 800
+    $window.Height = 750
     $window.Background = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.Color]::FromRgb(35, 35, 35))  
 
 
@@ -993,7 +1026,7 @@ function Config-window{
         $textBlock = New-Object System.Windows.Controls.TextBlock
         $textBlock.Margin = [System.Windows.Thickness]::new(0, -3, 0, 0)
         $textBlock.Inlines.Add($checkBoxContent)
-        $textBlock.FontSize = 16
+        $textBlock.FontSize = 18
         $textBlock.FontFamily = "Segoe UI"
         $textBlock.Foreground = [System.Windows.Media.Brushes]::White
         $textBlock.HorizontalAlignment = "Left"
@@ -1021,12 +1054,21 @@ function Config-window{
     }
 
     # Checkboxes
-    $checkBoxVSCode = Create-CheckboxWithLink "VSCode" "(VSCode EULA)" "https://code.visualstudio.com/license"
+    $checkBoxInstaller = Create-CheckboxWithLink "Qiskit Windows Installer" "(Installer License Agreement)" "https://github.com/ket-q/qiskit_windows_installer/blob/main/LICENSE"
     $checkBoxPython = Create-CheckboxWithLink "Python" "(Python License Agreement)" "https://docs.python.org/3/license.html"
     $checkBoxQiskit = Create-CheckboxWithLink "Qiskit" "(Qiskit License Agreement)" "https://quantum.ibm.com/terms"
-    $checkBoxPyenv = Create-CheckboxWithLink "Pyenv-win" "(Pyenv License Agreement)" "https://github.com/pyenv-win/pyenv-win/blob/master/LICENSE"
-    $checkBoxVisualC = Create-CheckboxWithLink "Visual C++ Redistributable" "(Visual C++ License Agreement)" "https://visualstudio.microsoft.com/license-terms/vs2022-cruntime/"
-    $checkBoxInstaller = Create-CheckboxWithLink "Qiskit Windows Installer" "(Installer License Agreement)" "https://github.com/ket-q/qiskit_windows_installer/blob/main/LICENSE"
+
+
+    if (-not $VSCode_license_status) {
+    $checkBoxVSCode = Create-CheckboxWithLink "VSCode" "(VSCode EULA)" "https://code.visualstudio.com/license"
+    }
+    if (-not $Pyenv_license_status) {
+        $checkBoxPyenv = Create-CheckboxWithLink "Pyenv-win" "(Pyenv License Agreement)" "https://github.com/pyenv-win/pyenv-win/blob/master/LICENSE"
+    }
+
+    if (-not $MVCR_license_status) {
+        $checkBoxVisualC = Create-CheckboxWithLink "Visual C++ Redistributable" "(Visual C++ License Agreement)" "https://visualstudio.microsoft.com/license-terms/vs2022-cruntime/"
+    }
 
 
 
@@ -1178,43 +1220,44 @@ function Config-window{
 
     # Checkbox event handler
     $checkBoxChangedHandler = {
-        if ($checkBoxVSCode.IsChecked -and $checkBoxPython.IsChecked -and $checkBoxQiskit.IsChecked -and $checkBoxPyenv.IsChecked -and $checkBoxInstaller.IsChecked -and $checkBoxVisualC.IsChecked -and $global:checkSelection) {
-            $buttonProceed.IsEnabled = $true
-        } else {
-            $buttonProceed.IsEnabled = $false
-        }
-    }
+        $allChecked = $true
 
-    $checkBoxVSCode.Add_Checked($checkBoxChangedHandler)
+        if (-not $checkBoxPython.IsChecked) { $allChecked = $false }
+        if (-not $checkBoxQiskit.IsChecked) { $allChecked = $false }
+        if (-not $checkBoxInstaller.IsChecked) { $allChecked = $false }
+
+        if ($checkBoxVSCode -ne $null -and -not $checkBoxVSCode.IsChecked) { $allChecked = $false }
+        if ($checkBoxPyenv -ne $null -and -not $checkBoxPyenv.IsChecked) { $allChecked = $false }
+        if ($checkBoxVisualC -ne $null -and -not $checkBoxVisualC.IsChecked) { $allChecked = $false }
+
+        $buttonProceed.IsEnabled = $allChecked -and $global:checkSelection
+    }
+    
+    $checkBoxInstaller.Add_Checked($checkBoxChangedHandler)
     $checkBoxPython.Add_Checked($checkBoxChangedHandler)
     $checkBoxQiskit.Add_Checked($checkBoxChangedHandler)
-    $checkBoxPyenv.Add_Checked($checkBoxChangedHandler)
-    $checkBoxInstaller.Add_Checked($checkBoxChangedHandler)
-    $checkBoxVisualC.Add_Checked($checkBoxChangedHandler)
+    if ($checkBoxPyenv)     { $checkBoxPyenv.Add_Checked($checkBoxChangedHandler) }
+    if ($checkBoxVisualC)   { $checkBoxVisualC.Add_Checked($checkBoxChangedHandler) }
+    if ($checkBoxVSCode)    { $checkBoxVSCode.Add_Checked($checkBoxChangedHandler) }
 
 
-    $checkBoxVSCode.Add_Unchecked($checkBoxChangedHandler)
+    $checkBoxInstaller.Add_Unchecked($checkBoxChangedHandler)
     $checkBoxPython.Add_Unchecked($checkBoxChangedHandler)
     $checkBoxQiskit.Add_Unchecked($checkBoxChangedHandler)
-    $checkBoxPyenv.Add_Unchecked($checkBoxChangedHandler)
-    $checkBoxInstaller.Add_Unchecked($checkBoxChangedHandler)
-    $checkBoxVisualC.Add_Checked($checkBoxChangedHandler)
-
-
-
-
-
+    if ($checkBoxPyenv)     { $checkBoxPyenv.Add_Unchecked($checkBoxChangedHandler) }
+    if ($checkBoxVisualC)   { $checkBoxVisualC.Add_Unchecked($checkBoxChangedHandler) }
+    if ($checkBoxVSCode)    { $checkBoxVSCode.Add_Unchecked($checkBoxChangedHandler) }
 
     # StackPanel Layout
     $stackPanel = New-Object System.Windows.Controls.StackPanel
     $null = $stackPanel.Children.Add($logoBlock)
     $null = $stackPanel.Children.Add($textBlock)
     $null = $stackPanel.Children.Add($textBlock2)
-    $null = $stackPanel.Children.Add($checkBoxVSCode)
     $null = $stackPanel.Children.Add($checkBoxPython)
     $null = $stackPanel.Children.Add($checkBoxQiskit)
-    $null = $stackPanel.Children.Add($checkBoxPyenv)
-    $null = $stackPanel.Children.Add($checkBoxVisualC)
+    if ($checkBoxVSCode)   { $null = $stackPanel.Children.Add($checkBoxVSCode) }
+    if ($checkBoxPyenv)    { $null = $stackPanel.Children.Add($checkBoxPyenv) }
+    if ($checkBoxVisualC)  { $null = $stackPanel.Children.Add($checkBoxVisualC) }
     $null = $stackPanel.Children.Add($checkBoxInstaller)
     $null = $stackPanel.Children.Add($textQiskit)
     $null = $stackPanel.Children.Add($comboBox)
@@ -1222,6 +1265,19 @@ function Config-window{
     $null = $stackPanel.Children.Add($borderCancel)
 
     $window.Content = $stackPanel
+
+    #Resize of the window
+
+    $baseHeight = 800
+    $checkboxHeight = 40
+    $missingCount = 0
+
+    if (-not $checkBoxVSCode)   { $missingCount++ }
+    if (-not $checkBoxPyenv)    { $missingCount++ }
+    if (-not $checkBoxVisualC)  { $missingCount++ }
+
+    $window.Height = $baseHeight - ($missingCount * $checkboxHeight)
+
 
     # License acceptance tracking
     $global:acceptedLicense = $false
@@ -1264,6 +1320,7 @@ Log-Status "QIWI version: $qiskit_windows_installer_version"
 Write-Header 'Step 1/18: Set install script execution policy'
 try {
     Set-ExecutionPolicy Bypass -Scope Process -Force
+
 }
 catch {
     Log-Err 'fatal' 'Install script execution policy failed at Step 1' $($_.Exception.Message)
@@ -1280,6 +1337,45 @@ try {
     Log-Err 'fatal' "Error when calling Check-Installation-Platform at Step 2" $($_.Exception.Message)
 }
 
+Write-Header 'Step 2b/18 Check installed softwares'
+
+$VSCode_license_status = $false
+$MVCR_license_status = $false
+$Pyenv_license_status = $false
+
+#False = the user needs to accept the licenses
+#True = the user has already accepted the the licenses
+
+if (Get-Command code -ErrorAction SilentlyContinue) {
+    Log-Status "VS Code is already installed"
+    $VSCode_license_status = $true
+} else {
+        Log-Status "VS Code is not installed"
+}
+
+$CheckResult = Check-MVCR
+switch ($CheckResult) {
+    ([MVCRStatus]::NotInstalled) {
+        Log-Status "Microsoft Visual C++ Redistributable (MVCR) is not installed. The latest version will be installed"
+    }
+
+    ([MVCRStatus]::Outdated) {
+        Log-Status "An older version of Microsoft Visual C++ Redistributable is installed. The latest version will be installed"
+    }
+
+    ([MVCRStatus]::UpToDate) {
+        Log-Status "Latest version of Microsoft Visual C++ Redistributable is already installed"
+        $MVCR_license_status = $true
+
+    }
+}
+
+if (Get-Command pyenv -ErrorAction SilentlyContinue) {
+    Log-Status "Pyenv is already installed"
+    $Pyenv_license_status = $true
+} else {
+    Log-Status "Pyenv is not installed"
+}
 
 #
 # Step 3: Config window
@@ -1325,7 +1421,7 @@ Write-Header 'Step 4/18: set up installer root folder structure'
 
 try {
     if (!(Test-Path $ROOT_DIR)){
-        New-Item -Path $ROOT_DIR -ItemType Directory
+        New-Item -Path $ROOT_DIR -ItemType Directory 
     }
 
 } catch {
@@ -1367,7 +1463,7 @@ Write-Header 'Step 4a/18: set up log folder'
 try {
     if ( !(Test-Path $LOG_DIR) ) {
         # Log folder does not exist yet => create
-        $discard = New-Item -Path $LOG_DIR -ItemType Directory
+        New-Item -Path $LOG_DIR -ItemType Directory 
     }
     if ( !(Test-Path $LOG_FILE) ) {
         # Log file does not exist yet => create
@@ -1411,18 +1507,18 @@ catch {
 #
 
 
-Write-Header 'Step 5/18 Installing Visual C++ Redistributable'
+Write-Header 'Step 5/18 Installing Microsoft Visual C++ Redistributable (MVCR)'
 
 $CheckResult = Check-MVCR
 
 switch ($CheckResult) {
     ([MVCRStatus]::NotInstalled) {
-        Log-Status "Microsoft Visual C++ Redistributable is not installed at all"
+        Log-Status "Microsoft Visual C++ Redistributable (MVCR) is not installed at all. The latest version will be installed"
         try {
             Install-MVCR
         } catch {
             $err_msg = (
-                "Installation of Visual C++ failed in Step 5.1",
+                "Installation of MVCR failed in Step 5.1",
                 "Manual intervention required."
             ) -join "`r`n"
             Log-Err 'fatal' $err_msg $($_.Exception.Message) 
@@ -1430,13 +1526,13 @@ switch ($CheckResult) {
     }
 
     ([MVCRStatus]::Outdated) {
-        Log-Status "An older version of Microsoft Visual C++ Redistributable is installed."
+        Log-Status "An older version of Microsoft Visual C++ Redistributable is installed. The latest version will be installed"
         try {
-            Uninstall-MVCR
+            #Uninstall-MVCR
             Install-MVCR
         } catch {
             $err_msg = (
-                "Installation of Visual C++ failed in Step 5.1",
+                "Installation of MVCR failed in Step 5.2",
                 "Manual intervention required."
             ) -join "`r`n"
             Log-Err 'fatal' $err_msg $($_.Exception.Message) 
@@ -1447,12 +1543,23 @@ switch ($CheckResult) {
         Log-Status "Latest version is already installed"
     }
 }
-
+ 
 #
 # Step 6: Visual Studio Code
 #
 
-Write-Header 'Step 6/18: Install VSCode'
+Write-Header 'Step 6a/18: Install VSCode'
+
+try {
+    $env:NODE_OPTIONS ="--force-node-api-uncaught-exceptions-policy=true" #To prevent DEP0168 error
+} catch {
+    $err_msg = (
+            'Initialization of node option failed at Step 6a',
+            'Manual check required.'
+            ) -join "`r`n"
+        Log-Err 'fatal' $err_msg $($_.Exception.Message) 
+}
+
 if ( !(Get-Command code -ErrorAction SilentlyContinue) ) {
     Log-Status 'VSCode not installed, running installer'
     Install-VSCode
@@ -1460,7 +1567,7 @@ if ( !(Get-Command code -ErrorAction SilentlyContinue) ) {
     # Ensure VScode installation succeeded:
     if ( !(Get-Command code -ErrorAction SilentlyContinue) ) {
         $err_msg = (
-            'VSCode installation failed in Step 6',
+            'VSCode installation failed in Step 6a',
             'Manual check required.'
             ) -join "`r`n"
         Log-Err 'fatal' $err_msg
@@ -1476,6 +1583,47 @@ Install-VSCode-Extension 'ms-python.python'
 
 Log-Status 'Installing VSCode Jupyter extension'
 Install-VSCode-Extension 'ms-toolsai.jupyter'
+
+
+Write-Header 'Step 6b/18: Preloading VSCode extensions'
+
+Invoke-Native code --disable-workspace-trust
+
+$timeout = 10
+$elapsed = 0
+$processes = $null
+try {
+    while (-not $processes -and $elapsed -lt $timeout) {
+        $processes = Get-Process -Name "Code" -ErrorAction SilentlyContinue
+        if (-not $processes) {
+            Start-Sleep -Seconds 1
+            $elapsed++
+        }
+    }
+
+    if ($processes) {
+        Add-Type -TypeDefinition @"
+            using System;
+            using System.Runtime.InteropServices;
+            public class WinAPI {
+                [DllImport("user32.dll")]
+                public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+            }
+"@
+        foreach ($proc in $processes) {
+            if ($proc.MainWindowHandle -ne 0) {
+                [void][WinAPI]::ShowWindow($proc.MainWindowHandle, 6)  
+            }
+        }
+    }
+} catch {
+    $err_msg = (
+            'Preloading visual studio code extension failed at Step 6b',
+            'Manual check required.'
+            ) -join "`r`n"
+        Log-Err 'fatal' $err_msg $($_.Exception.Message) 
+}
+
 
 #
 # Step 7: pyenv-win
@@ -1608,11 +1756,12 @@ catch {
     Log-Err 'fatal' $err_msg $($_.Exception.Message)
 }
 
+
 #
 # Step 10: Download requirements_file
 #
 
-Write-Header "Step 10/18: Download $requirements_file from $req_URL"
+Write-Header "Step 10/18: Download $requirements_file"
 
 try {
 # Download the requirements.txt file for the new venv
@@ -1654,6 +1803,7 @@ catch {
     Log-Err 'fatal' $err_msg $($_.Exception.Message)
 }
 
+
 #
 # Step 12: Update pip of venv
 #
@@ -1673,6 +1823,8 @@ catch {
 #
 # Step 13: Install Qiskit in venv
 #
+
+
 
 Write-Header "Step 13/18: install Qiskit in venv $MY_VENV_DIR"
 try {   
@@ -1773,22 +1925,22 @@ catch {
 } 
 
 #
-# Step 18: Open VS code with the notebook
+# Step 18: Open VS Code with the notebook
 #
 
 Write-Header "Step 18/18: Open Visual Studio code with the notebook"
 try {
-
     $NoteBookURL = "https://raw.githubusercontent.com/ket-q/qiskit_windows_installer/refs/heads/main/resources/notebook/IBM_account_setup.ipynb"
     Invoke-WebRequest -Uri $NoteBookURL -OutFile "$env:USERPROFILE\Downloads\IBM_account_setup.ipynb"
-    Invoke-Native code --disable-workspace-trust 
-    Start-Sleep -Seconds 2
-    Invoke-Native code  --reuse-window "$env:USERPROFILE\Downloads\IBM_account_setup.ipynb"
-
+    Invoke-Native code --reuse-window "$env:USERPROFILE\Downloads\IBM_account_setup.ipynb"
 }
 catch {
-    Log-Err 'fatal' 'Error during VS code opening' $($_.Exception.Message)
+    Log-Err 'fatal' 'Error during opening of VS Code' $($_.Exception.Message)
 }
+
+
 
 Log-Status "INSTALLATION DONE"
 Log-Status "You can close this window."
+
+Start-Sleep -Seconds 600
