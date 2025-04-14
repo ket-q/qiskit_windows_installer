@@ -1,6 +1,12 @@
 # Top-level folder of installer to keep files other than the venvs:
 $ROOT_DIR = Join-Path ${env:LOCALAPPDATA} -ChildPath 'qiskit_windows_installer'
 
+$LOG_DIR = Join-Path $ROOT_DIR -ChildPath 'log'
+$LOG_FILE = Join-Path $LOG_DIR -ChildPath 'log.txt'
+$CODE_CMD = "$env:LOCALAPPDATA\Programs\Microsoft VS Code\bin\code.cmd"
+$CODE_EXE = "$env:LOCALAPPDATA\Programs\Microsoft VS Code\Code.exe"
+
+
 
 
 function Output {
@@ -354,12 +360,12 @@ if (Test-Path $ROOT_DIR) {
 Write-Header 'Step 3/9: Uninstall VSCode'
 
 try {
-    if ((Get-Command code -ErrorAction SilentlyContinue) ) {
+   if (Test-Path $CODE_EXE){
         Log-Status 'VSCode installed, running uninstaller'
         
         Uninstall-VSCode
         # Ensure VScode installation succeeded:
-        if ((Get-Command code -ErrorAction SilentlyContinue) ) {
+        if (Test-Path $CODE_EXE) {
             $err_msg = (
                 'VSCode uninstallation failed.',
                 'Manual check required.'
