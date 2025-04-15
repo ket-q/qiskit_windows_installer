@@ -1218,7 +1218,7 @@ function Config-window{
     $global:qiskit_selection = $null
 
     # Add items to the ComboBox
-    @("qiskit_1.4.2 (latest)", "qiskit_1.3.2") | ForEach-Object {
+    @("qiskit_2.0.0 (latest)","qiskit_1.4.2", "qiskit_1.3.2") | ForEach-Object {
         $item = New-Object Windows.Controls.ComboBoxItem
         $item.Content = $_
         $item.FontSize = 20
@@ -1784,6 +1784,7 @@ catch {
 # Step 10: Download requirements_file
 #
 
+
 Write-Header "Step 10/18: Download $requirements_file"
 
 try {
@@ -1804,7 +1805,8 @@ if ((Get-Content $requirements_file -TotalCount 1).Substring(0,3) -eq '404') {
         "Manual intervention required"
         ) -join "`r`n"
     Log-Err 'fatal' $err_msg $($_.Exception.Message)
-}
+} 
+
 
 #
 # Step 11: Set up venv
@@ -1837,7 +1839,7 @@ catch {
 
 Write-Header "Step 12/18: update pip of venv $MY_VENV_DIR"
 try {
-    Invoke-Native $VENV_PIP install --upgrade pip
+    Invoke-Native $VENV_PYTHON -m pip install --upgrade pip
 
 }
 catch {
