@@ -1,16 +1,51 @@
 # ==================================================
 # ================ GLOBAL VARIABLES ================
 # ==================================================
-
-$CPU_ARCHITECTURE = $env:PROCESSOR_ARCHITECTURE
+$QISKIT_WINDOWS_INSTALLER_VERSION = '0.1.6'
 
 
 # Stop the script when a cmdlet or a native command fails
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-$QISKIT_WINDOWS_INSTALLER_VERSION = '0.1.3'
+$CPU_ARCHITECTURE_CODE = [int](Get-CimInstance Win32_Processor).Architecture
+
+# Mapping of CPU Architecture Codes to Names
+$archMap = @{
+    0  = "x86"
+    1  = "MIPS"
+    2  = "Alpha"
+    3  = "PowerPC"
+    5  = "ARM"
+    6  = "Itanium"
+    9  = "AMD64"
+    12 = "ARM64"
+}
+
+# Get the architecture string from the map based on the CPU architecture code
+$CPU_ARCHITECTURE = $archMap[$CPU_ARCHITECTURE_CODE]
+
+# Check if the architecture is valid
+if (-not $CPU_ARCHITECTURE) {
+    Write-Host $CPU_ARCHITECTURE
+    Log-Err 'fatal' "Unsupported CPU architecture code '$CPU_ARCHITECTURE_CODE'." ""
+    exit
+}
+
 $PYTHON_VERSION = '3.12.2' # 3.13 not working because ray requires Python 3.12
+
+
+switch ($CPU_ARCHITECTURE) {
+    'x86'   { $PYTHON_VERSION = "$PYTHON_VERSION-win32" }   # For x86 systems, use the win32 version
+    'AMD64' { $PYTHON_VERSION = $PYTHON_VERSION }            # For AMD64 systems, no change needed
+    'ARM64' { $PYTHON_VERSION = $PYTHON_VERSION }      # For ARM64 systems, use the arm version
+    default {
+        Log-Err 'fatal' "Unsupported CPU architecture '$CPU_ARCHITECTURE' for Python installation." "Please check"
+    }
+}
+
+
+
 
 # Minimum required version for Microsoft Visual C++ Redistributable (MVCR)
 $MVCR_MIN_VERSION = [System.Version]"14.42.34438.0"  
@@ -307,19 +342,25 @@ will be possible on this computer:
 #>
     # CPU architecture
 
+
     try {
-        if ( ($CPU_ARCHITECTURE -ne 'AMD64')) {
-            if($CPU_ARCHITECTURE -eq 'ARM64') {
-                Log-Status "ARM64 processor detected. Proceeding with installation, but full compatibility is not guaranteed."
-            } else {
-                $err_msg = (
-                "The installer currently only supports the 'AMD64' and 'ARM64' architecture inside Check-Installation-Platform function",
-                "But this computer is of architecture '$CPU_ARCHITECTURE'."
-                ) -join "`r`n"
-                Log-Err 'fatal' 'Check-Install-Platform' $err_msg
-            }
-            
+        
+        if (($CPU_ARCHITECTURE -eq 'AMD64')) {
+            Log-Status "AMD64 processor detected."
+
+        } elseif (($CPU_ARCHITECTURE -eq 'x86')) {
+            Log-Status "x86 processor detected."
+
+        } elseif (($CPU_ARCHITECTURE -eq 'ARM64')) {
+            Log-Status "ARM64 processor detected."
+        } else {
+            $err_msg = (
+        "The installer currently only supports the 'AMD64','x86' and 'ARM64' architecture.",
+        "Failed inside Check-Installation-Platform function"
+        ) -join "`r`n"
+        Log-Err 'fatal' 'Check-Install-Platform' $err_msg
         }
+
     } catch {
         $err_msg = (
             "Error while checking processor architecture",
@@ -481,38 +522,62 @@ enum MVCRStatus {
 # Function to check if VC++ Redistributable is installed
 function Check-MVCR {
 
-   # Possible outputs:
-    # MVCRStatus::NotInstalled  -> No version found, needs to be installed
-    # MVCRStatus::Outdated      -> Outdated version found, needs to be uninstalled and updated
-    # MVCRStatus::UpToDate      -> Newest version found, nothing to do
-    
+    $Path = "HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
 
-    $VCKeys = @(
-        "HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64",
-        "HKLM:\SOFTWARE\Microsoft\VisualStudio\17.0\VC\Runtimes\x64"
-    )
-
-    foreach ($Key in $VCKeys) {
-        if (Test-Path $Key) {
-            $Installed = Get-ItemProperty -Path $Key -Name "Installed" -ErrorAction SilentlyContinue
-            $Version = Get-ItemProperty -Path $Key -Name "Version" -ErrorAction SilentlyContinue  
-
-            if ($Installed.Installed -eq 1) {
-
-                if ($Version.Version) {
-                    $VersionString = $Version.Version -replace "^v", ""
-            
-                    $InstalledVersion = [System.Version]$VersionString   
-
-                    if ($InstalledVersion -ge $MVCR_min_version) {
-                        return [MVCRStatus]::UpToDate
-                    }
-                }
-                return [MVCRStatus]::Outdated
-            }
+    # Define architecture-specific requirements
+    $RequiredRedistributables = @()
+    switch ($CPU_ARCHITECTURE) {
+        "ARM64" {
+            # ARM64 needs x86, x64, and ARM64 redistributables
+            $RequiredRedistributables = @(
+                "Microsoft Visual C++ 2015-2022 Redistributable (x86)*",
+                "Microsoft Visual C++ 2015-2022 Redistributable (x64)*",
+                "Microsoft Visual C++ 2022 Redistributable (Arm64)*"
+            )
+        }
+        "AMD64" {
+            # AMD64 needs x86 and x64 redistributables
+            $RequiredRedistributables = @(
+                "Microsoft Visual C++ 2015-2022 Redistributable (x86)*",
+                "Microsoft Visual C++ 2015-2022 Redistributable (x64)*"
+            )
+        }
+        "x86" {
+            # x86 only needs the x86 redistributable
+            $RequiredRedistributables = @(
+                "Microsoft Visual C++ 2015-2022 Redistributable (x86)*"
+            )
+        }
+        default {
+            return [MVCRStatus]::NotInstalled
         }
     }
-    return [MVCRStatus]::NotInstalled
+
+    # Check for the required redistributables
+    $AtLeastOneOutdated = $false
+
+    foreach ($redistributable in $RequiredRedistributables) {
+        $entry = Get-ItemProperty $Path |
+            Where-Object { $_.DisplayName -like $redistributable } |
+            Select-Object -First 1
+
+        if (-not $entry) {
+            return [MVCRStatus]::NotInstalled
+        }
+        Log-Status "Found : $($entry.DisplayName)"
+
+        $InstalledVersion = [System.Version]$entry.DisplayVersion
+
+        if ($InstalledVersion -lt $MVCR_min_version) {
+            $AtLeastOneOutdated = $true
+        }
+    }
+
+    if ($AtLeastOneOutdated) {
+        return [MVCRStatus]::Outdated
+    }
+
+    return [MVCRStatus]::UpToDate
 }
 
 
@@ -540,140 +605,107 @@ function Uninstall-MVCR {
 
 
 function Install-MVCR {
+    function Install-MVCR-Version($arch, $url) {
+        $installerPath = "$env:TEMP\vc_redist.$arch.exe"
 
-    # Function to install Microsoft Visual C++ Redistributable and resolve SYMENGINE dependency
-    # x64 Installation
-    $MVCR_URL_x64 = "https://aka.ms/vs/17/release/vc_redist.x64.exe"
-    $MVCR_Installer_Path_x64 = "$env:TEMP\vc_redist.x64.exe"
+        Log-Status "Downloading Microsoft Visual C++ Redistributable $arch installer"
+        try {
+            Download-File $url $installerPath
+        } catch {
+            $err_msg = "Download file of MVCR $arch failed`r`nManual check required"
+            Log-Err 'fatal' $err_msg $($_.Exception.Message)
+            return
+        }
 
-    Log-Status 'Downloading Microsoft Visual C++ Redistributable x64 installer'
-    try {
-        Download-File $MVCR_URL_x64 $MVCR_Installer_Path_x64
-    } catch {
-        $err_msg = (
-            "Download file of MVCR x64 failed",
-            "Manual check required"
-        ) -join "`r`n"
-        Log-Err 'fatal' $err_msg $($_.Exception.Message)
+        try {
+            $process = Start-Process -FilePath $installerPath -ArgumentList "/quiet /norestart" -Verb RunAs -PassThru -Wait
+        } catch {
+            $err_msg = "Installation of MVCR $arch failed`r`nManual check required"
+            Log-Err 'fatal' $err_msg $($_.Exception.Message)
+            return
+        }
+
+        if ($process.ExitCode -eq 3010) {
+            Log-Status "MVCR $arch installed successfully, but a reboot may be required (Exit Code 3010)"
+        } elseif ($process.ExitCode -ne 0) {
+            Log-Err 'fatal' "Error during MVCR $arch installation" "Code Error: $($process.ExitCode)"
+        }
+
+        try {
+            Remove-Item -Path $installerPath -Force
+        } catch {
+            $err_msg = "Couldn't remove MVCR $arch installer`r`nManual check required"
+            Log-Err 'warn' $err_msg $($_.Exception.Message)
+        }
     }
 
-    try {
-        $process = Start-Process -FilePath $MVCR_Installer_Path_x64 -ArgumentList "/quiet /norestart" -Verb RunAs -PassThru -Wait
-    } catch {
-        $err_msg = (
-            "Installation of MVCR x64 failed",
-            "Manual check required"
-        ) -join "`r`n"
-        Log-Err 'fatal' $err_msg $($_.Exception.Message)
+    Install-MVCR-Version 'x86' "https://aka.ms/vs/17/release/vc_redist.x86.exe"
+
+    if ($CPU_ARCHITECTURE -eq 'ARM64' -or $CPU_ARCHITECTURE -eq 'AMD64') {
+        Install-MVCR-Version 'x64' "https://aka.ms/vs/17/release/vc_redist.x64.exe"
     }
 
-    if ($process.ExitCode -eq 3010) {
-        Log-Status "MVCR installed successfully, but a reboot may be required (Exit Code 3010)"
-    } elseif ($process.ExitCode -ne 0) {
-        Log-Err 'fatal' "Error during MVCR x64 installation" "Code Error: $($process.ExitCode)"
+    if ($CPU_ARCHITECTURE -eq 'ARM64') {
+        Install-MVCR-Version 'arm64' "https://aka.ms/vs/17/release/vc_redist.arm64.exe"
     }
-
-    try {
-        Remove-Item -Path $MVCR_Installer_Path_x64 -Force
-    } catch {
-        $err_msg = (
-            "Couldn't remove MVCR x64 installer",
-            "Manual check required"
-        ) -join "`r`n"
-        Log-Err 'warn' $err_msg $($_.Exception.Message)
-    }
-
-    # x86 Installation
-    $MVCR_URL_x86 = "https://aka.ms/vs/17/release/vc_redist.x86.exe"
-    $MVCR_Installer_Path_x86 = "$env:TEMP\vc_redist.x86.exe"
-
-    Log-Status 'Downloading Microsoft Visual C++ Redistributable x86 installer'
-    try {
-        Download-File $MVCR_URL_x86 $MVCR_Installer_Path_x86
-    } catch {
-        $err_msg = (
-            "Download file of MVCR x86 failed",
-            "Manual check required"
-        ) -join "`r`n"
-        Log-Err 'fatal' $err_msg $($_.Exception.Message)
-    }
-
-    try {
-        $process = Start-Process -FilePath $MVCR_Installer_Path_x86 -ArgumentList "/quiet /norestart" -Verb RunAs -PassThru -Wait
-    } catch {
-        $err_msg = (
-            "Installation of MVCR x86 failed",
-            "Manual check required"
-        ) -join "`r`n"
-        Log-Err 'fatal' $err_msg $($_.Exception.Message)
-    }
-
-    if ($process.ExitCode -eq 3010) {
-        Log-Status "MVCR x86 installed successfully, but a reboot may be required (Exit Code 3010)"
-    } elseif ($process.ExitCode -ne 0) {
-        Log-Err 'fatal' "Error during MVCR x86 installation" "Code Error: $($process.ExitCode)"
-    }
-
-    try {
-        Remove-Item -Path $MVCR_Installer_Path_x86 -Force
-    } catch {
-        $err_msg = (
-            "Couldn't remove MVCR x86 installer",
-            "Manual check required"
-        ) -join "`r`n"
-        Log-Err 'warn' $err_msg $($_.Exception.Message)
-    }
-
-
 }
 
 
+
 function Install-VSCode {
+    # Determine installer URL based on architecture
+    switch ($CPU_ARCHITECTURE) {
+        'x86'   { $VSCode_URL = 'https://code.visualstudio.com/sha/download?build=stable&os=win32-user' }
+        'AMD64' { $VSCode_URL = 'https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-user' }
+        'ARM64' { $VSCode_URL = 'https://code.visualstudio.com/sha/download?build=stable&os=win32-arm64-user' }
+        default {
+            $err_msg = "Unsupported CPU architecture '$CPU_ARCHITECTURE' for VSCode installation."
+            Log-Err 'fatal' $err_msg
+            return
+        }
+    }
+
     $VSCode_installer = 'vscode_installer.exe'
     $VSCode_installer_path = Join-Path ${env:TEMP} -ChildPath $VSCode_installer
-    # Download the local installer by appending '-user' to the download URL:
-    $VSCode_URL = 'https://code.visualstudio.com/sha/download?build=stable&os=win32-x64-user'
 
     # Download VSCode
-
-    Log-Status 'Downloading VSCode installer'
+    Log-Status "Downloading VSCode installer for $CPU_ARCHITECTURE"
 
     try {
         Download-File $VSCode_URL $VSCode_installer_path
-    }
-    catch {
+    } catch {
         $err_msg = (
-            "Download file of VS Code inside the Install-VScode function failed",
+            "Download of VS Code inside the Install-VSCode function failed",
             "Manual check required"
-            ) -join "`r`n"
-        Log-Err 'fatal' $err_msg $($_.Exception.Message) 
+        ) -join "`r`n"
+        Log-Err 'fatal' $err_msg $($_.Exception.Message)
     }
+
     # Install VSCode
     Log-Status 'Running VSCode installer'
     $unattended_args = '/VERYSILENT /MERGETASKS=desktopicon,addtopath,!runcode'
 
     try {
-        Start-Process -FilePath $VSCode_installer_path -ArgumentList $unattended_args -Wait -Passthru  
+        Start-Process -FilePath $VSCode_installer_path -ArgumentList $unattended_args -Wait -Passthru
     } catch {
         $err_msg = (
-            "Installation of VScode insinde the Install-VScode  function failed",
+            "Installation of VSCode inside the Install-VSCode function failed",
             "Manual check required"
-            ) -join "`r`n"
+        ) -join "`r`n"
         Log-Err 'fatal' $err_msg $($_.Exception.Message)
     }
 
     try {
         Remove-Item $VSCode_installer_path
-    }
-    catch {
+    } catch {
         $err_msg = (
-        "Cleaning of VSCode_installer path failed inside Install-VScode function failed",
-        "Manual check required"
+            "Cleanup of VSCode installer path failed inside Install-VSCode function",
+            "Manual check required"
         ) -join "`r`n"
         Log-Err 'fatal' $err_msg $($_.Exception.Message)
-
     }
-    Log-Status 'DONE'
+
+    Log-Status 'VSCode installation DONE'
 }
 
 
@@ -1690,7 +1722,9 @@ if ( !(Lookup-pyenv-Cache $python_version $ROOT_DIR) ) {
 #
 
 Write-Header "Step 9/18: Set up Python $python_version for venv"
+
 try {
+
     Invoke-Native $PYENV_EXE install $python_version
     Invoke-Native $PYENV_EXE local $python_version
 }
