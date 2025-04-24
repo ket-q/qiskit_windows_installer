@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>QIWI</title>
+  <style>
+    /* Apply GitHub README font styles to body */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: auto;
+      padding: 2rem;
+      color: #24292f;
+      background: #ffffff;
+    }
+    .download-button {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 5px;
+    background: #183153;
+    font-family: "Montserrat", sans-serif;
+    box-shadow: 0px 6px 24px 0px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    cursor: pointer;
+    border: none;
+    }
+
+    .download-button:after {
+        content: " ";
+        width: 0%;
+        height: 100%;
+        background: white;
+        position: absolute;
+        transition: all 0.4s ease-in-out;
+        right: 0;
+    }
+
+    .download-button:hover::after {
+        right: auto;
+        left: 0;
+        width: 100%;
+    }
+
+    .download-button span {
+        text-align: center;
+        text-decoration: none;
+        width: 100%;
+        padding: 18px 25px;
+        color: #fff;
+        font-size: 1.5em;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        z-index: 20;
+        transition: all 0.3s ease-in-out;
+    }
+
+    .download-button:hover span {
+        color: #183153;
+        animation: scaleUp 0.3s ease-in-out;
+    }
+
+  @keyframes scaleUp {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.95);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  .no-underline {
+    text-decoration: none;
+  }
+  </style>
+</head>
+<body>
+
+    <div class="container-lg px-3 my-5 markdown-body">
+              
+  
+  <div align="center">
+  
+    <!-- PROJECT LOGO -->
+    <br>
+      
+    <img alt="QiskitWindowslogo" src="https://raw.githubusercontent.com/ket-q/qiskit_windows_installer/refs/heads/main/resources/assets/Logo.svg" width="90%" height="auto">      
+    <br>
+  </div>
+  
+  <h2 id="-what-is-qiwi-">📍 What is QIWI ?<a class="anchorjs-link " href="#-what-is-qiwi-" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h2>
+  
+  <p>QIWI, the <strong>Q</strong>iskit <strong>I</strong>nstaller for <strong>WI</strong>ndows, will set up Qiskit and a local copy of Visual Studio Code (VS Code) on your computer, with a ready-to-use Python virtual environment for Jupyter notebooks. After the installation, a Jupyter notebook
+  walks the user through the initial setup on the IBM Quantum Platform.</p>
+  
+  <p><br></p>
+  
+  <h2 id="️-important-notices-before-using-qiwi">⚠️ Important Notices Before Using QIWI<a class="anchorjs-link " href="#️-important-notices-before-using-qiwi" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h2>
+  
+  <ul>
+    <li>
+      <p>Only install software on a computer that is not production-level or mission-critical to you. (This is a general truth that does not pertain only to this installer.)</p>
+    </li>
+    <li>You are recommended to install Qiskit in a <strong>fresh user account</strong> on your computer.
+      <ul>
+        <li>This will help insulate your Qiskit SDK from other software you may have already installed on your computer, particularly if your computer already has a complicated software installation history.</li>
+        <li>Please refer to this <a href="https://www.youtube.com/watch?v=LpPZ1oBjsnM">tutorial video</a> on how to create a fresh user account.</li>
+        <li>Please log in under this account to install Qiskit.</li>
+        <li><strong>Note:</strong> if you forego to create a fresh user account, there is still a very
+  high likelyhood for your installation to succeed. But you effectively omit one
+  safety-net to safe-guard your existing computer configuration and insulate
+  the Qiskit environment from software already installed on your computer.</li>
+      </ul>
+    </li>
+    <li>
+      <p>Installation requirements for using QIWI:</p>
+  
+      <ul>
+        <li>Windows 11 or Windows 10 on the x86 platform</li>
+        <li>At least 4GB of free disk space</li>
+        <li>PowerShell 5.1 (comes pre-installed with both Windows 11 and 10)</li>
+      </ul>
+    </li>
+  </ul>
+  
+  <p><br></p>
+  
+  <h2 id="-installation">💥 Installation<a class="anchorjs-link " href="#-installation" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h2>
+  <!---
+  ### 📷  Watch the Youtube tutorial to install Qiskit!
+  
+  **Video coming soon**
+  
+  ---
+  -->
+  <h3 id="-running-the-installer">🏃 Running the Installer<a class="anchorjs-link " href="#-running-the-installer" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h3>
+  
+  <ul>
+    <li>
+        <p><strong>Method 1:</strong> (recommended if you’re fine with downloading and executing an executable on your computer):</p>
+        <div align="center" style="margin-bottom: 50px; margin-top: 50px;">
+            <button class = "download-button" onclick="startDownloadAndShowPopup()">
+                <span>Download QIWI</span>
+            </button>
+        </div>
+        
+        <!-- Modal -->
+        <div id="popup" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+             background-color: rgba(0, 0, 0, 0.5); z-index: 9999; justify-content: center; align-items: center;">
+            <div style="background: white; padding: 20px 30px; border-radius: 10px; text-align: center; max-width: 500px;">
+                <p style="font-size: 16px;">
+                    ⚠️ <strong>Security Notice:</strong><br><br>
+                    Windows may present you with a security warning in a blue box because it considers the installer a potential threat.<br><br>
+                    Please click “More information” and then “Execute anyway” to proceed with the installation.
+                </p>
+                <div style="justify-content: center;">
+                    <button onclick="closePopup()" style="
+                    margin-top: 20px;
+                    padding: 10px 20px;
+                    font-size: 16px;
+                    background-color: #4CAF50;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: background-color 0.3s;
+                    ">
+                    I understand
+                    </button>       
+                </div>     
+            </div>
+        </div>
+        
+        <script>
+        function startDownloadAndShowPopup() {
+            // Start the download
+            window.location.href = 'https://github.com/ket-q/qiskit_windows_installer_pub/raw/refs/heads/main/qiskit_installer.exe';
+        
+            // Show the popup
+            document.getElementById('popup').style.display = 'flex';
+        }
+        
+        function closePopup() {
+            document.getElementById('popup').style.display = 'none';
+        }
+        </script>
+    </li>
+    <li>
+      <p><strong>Method 2:</strong> (if you want visibility into the script you will execute on your computer): Run the provided installation script with Windows PowerShell.</p>
+  
+      <p><strong>Step 1</strong>: Open a PowerShell console window</p>
+      <ul>
+        <li>Type <code class="language-plaintext highlighter-rouge">PowerShell</code> in the Windows search bar and click <code class="language-plaintext highlighter-rouge">Windows PowerShell</code> (the blue square with the white ‘&gt;’ prompt).</li>
+      </ul>
+  
+      <p><strong>Step 2:</strong> Copy the following command into the clipboard (by clicking
+   on the square symbol in the right corner):</p>
+  
+      <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Set-ExecutionPolicy</span><span class="w"> </span><span class="nx">Bypass</span><span class="w"> </span><span class="nt">-Scope</span><span class="w"> </span><span class="nx">Process</span><span class="w"> </span><span class="nt">-Force</span><span class="p">;</span><span class="w"> </span><span class="kr">if</span><span class="p">(</span><span class="bp">$?</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">irm</span><span class="w"> </span><span class="s2">"https://github.com/ket-q/qiskit_windows_installer/raw/refs/heads/main/qiskit_installer.ps1"</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">iex</span><span class="p">}</span><span class="w">
+  </span></code></pre></div>    </div>
+  
+      <p><strong>Step 3:</strong> Paste the command from the clipboard into
+   your PowerShell console window (click on the PowerShell console window
+   and press CTRL+ V, followed by ENTER).</p>
+    </li>
+  </ul>
+  
+  <hr>
+  
+  <h3 id="-step-by-step-guide-through-the-installation-process">🚶 Step-by-step Guide Through the Installation Process:<a class="anchorjs-link " href="#-step-by-step-guide-through-the-installation-process" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h3>
+  
+  <h4 id="step-1️⃣-license-agreements-and-qiskit-version-selection">Step 1️⃣: License Agreements and Qiskit Version Selection<a class="anchorjs-link " href="#step-1️⃣-license-agreements-and-qiskit-version-selection" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h4>
+  <p>A configuration window will present you with the license agreements of all software packages that will be installed on your computer.</p>
+  
+  <p>Depending on pre-installed software, the installation will include at the maximum</p>
+  <ol>
+    <li>the Qiskit SDK,</li>
+    <li>a version of Python that matches the Qiskit SDK,</li>
+    <li>Pyenv-win (<a href="https://github.com/pyenv-win/pyenv-win">link</a>), for the local management of multiple Python installations,</li>
+    <li>the VS Code editor (<a href="https://code.visualstudio.com/">link</a>), and</li>
+    <li>the Microsoft Visual C++ Redistributable (MVCR, (<a href="https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170">link</a>)), a set of DLLs that Qiskit modules such as Symengine depend upon.</li>
+  </ol>
+  
+  <p>You are asked to review and accept each license agreement. You need to select the version of Qiskit that you want to install.</p>
+  
+  <p><img src="https://raw.githubusercontent.com/ket-q/qiskit_windows_installer/refs/heads/main/resources/assets/accepting.gif" alt="GIF aceppting licenses" style="width: 100%; height: auto;"></p>
+  
+  <h4 id="step-2️⃣-software-download-and-installation">Step 2️⃣: Software Download and Installation<a class="anchorjs-link " href="#step-2️⃣-software-download-and-installation" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h4>
+  
+  <ul>
+    <li>
+      <p>Download and setup of Qiskit and will require selveral minutes, depending on the speed of your internet connection and your computer.</p>
+    </li>
+    <li>
+      <p>If the installation includes MVCR, the Windows User Account Control (UAC) will ask for your confirmation. Otherwise the installation can run unattended.</p>
+    </li>
+  </ul>
+  
+  <h4 id="step-3️⃣-ibm-quantum-platform-access-setup">Step 3️⃣: IBM Quantum Platform Access Setup.<a class="anchorjs-link " href="#step-3️⃣-ibm-quantum-platform-access-setup" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h4>
+  
+  <p>Once the installation is complete, VS Code will automatically open with a Jupyter notebook that walks you throught the setup of your API token for the IBM Quantum Platform.
+  This Jupyter notebok includes:</p>
+  <ul>
+    <li>Selecting a Python interpreter for your Jupyter notebook</li>
+    <li>Adding your IBM Quantum API token to the Qiskit installation on your
+  local computer.</li>
+  </ul>
+  
+  <p><em>You can also download the setup <a href="https://github.com/ket-q/qiskit_windows_installer/blob/main/resources/notebook/IBM_account_setup.ipynb">notebook</a> manually. Click on the ``download raw file’’ button next to the pen (top-right)</em></p>
+  
+  <h2 id="️-use-of-the-installed-qiskit-sdk">✏️ Use of the Installed Qiskit SDK<a class="anchorjs-link " href="#️-use-of-the-installed-qiskit-sdk" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h2>
+  <h3 id="with-jupyter-notebooks">With Jupyter Notebooks<a class="anchorjs-link " href="#with-jupyter-notebooks" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h3>
+  <p>For every new Jupyter notebook that uses Qiskit, you will have to select the fitting Python interpreter to use:</p>
+  
+  <ol>
+    <li>
+      <p>In the top-right corner of the Jupyter notebook window, click on “Select Kernel”</p>
+    </li>
+    <li>
+      <p>Click on “Python Environments…”</p>
+    </li>
+    <li>
+      <p>In the drop-down list, select the Python environment name that starts with <code class="language-plaintext highlighter-rouge">qiskit_</code>, followed by the Qiskit version you chose during installation.</p>
+      <ul>
+        <li>
+          <p>Example: If during installation you chose version 1.4.2, your Python environment name will be <code class="language-plaintext highlighter-rouge">qiskit_1_4_2</code>.</p>
+        </li>
+        <li>
+          <p><strong>Note:</strong> It is <strong>essential</strong> to select the <strong>correct</strong> Python environment. VS Code may offer several alternative Python environments to you, but only the one starting with <code class="language-plaintext highlighter-rouge">qiskit_</code> contains your Qiskit installation.</p>
+        </li>
+      </ul>
+    </li>
+  </ol>
+  
+  <p><img src="https://raw.githubusercontent.com/ket-q/qiskit_windows_installer/refs/heads/main/resources/assets/select.gif" alt="GIF aceppting licenses"></p>
+  <h3 id="with-python-source-code">With Python Source Code<a class="anchorjs-link " href="#with-python-source-code" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h3>
+  <p>Python source code in the form of <code class="language-plaintext highlighter-rouge">*.py</code> files that use Qiskit require you to select the fitting Python interpreter.</p>
+  
+  <p>In VS Code,</p>
+  <ol>
+    <li>open the command palette (Ctrl + Shift + P)</li>
+    <li>select “Python : select interpreter”,</li>
+    <li>select our Qiskit environment “Python 3.* (Qiskit 1.*)”</li>
+  </ol>
+  
+  <p>You can now run Qiskit on Windows.</p>
+  
+  <h2 id="-technical-information">🔌 Technical information<a class="anchorjs-link " href="#-technical-information" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h2>
+  
+  <h3 id="location-of-installed-software">Location of Installed Software<a class="anchorjs-link " href="#location-of-installed-software" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h3>
+  
+  <p>The installer itself does not stay resident on your computer system.
+  Rather, it keeps
+  files isolated in your user account’s <code class="language-plaintext highlighter-rouge">${env:LOCALAPPDATA}</code> folder to minimize possible
+  interference with existing system-wide and/or user-level software installations
+  you your computer.</p>
+  
+  <p>The installer will create a Python virtual environment (venv) in <code class="language-plaintext highlighter-rouge">${env:USERPROFILE}/.virtualenvs</code>.</p>
+  
+  <h2 id="troubleshooting">Troubleshooting<a class="anchorjs-link " href="#troubleshooting" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h2>
+  <p>The installer has to step through many hoops to accomplish its task and may encounter network conditions or an environment on your local computer that constitute unforseen and unsurmountable problems. In the following, we provide general trouble-shooting guidelines as well as remedies for a few specific issues.</p>
+  
+  <h3 id="general-guidelines">General Guidelines<a class="anchorjs-link " href="#general-guidelines" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h3>
+  
+  <ul>
+    <li>Always run the installer on a Windows installation that is up-to-date.
+  Please refer to the following link on how to install the latest updates
+  on your computer (<a href="https://support.microsoft.com/en-us/windows/install-windows-updates-3c5ae7fc-9fb6-9af1-1984-b5e0412c556a">link</a>).</li>
+    <li>As discussed above, you are recommended to install Qiskit in a <strong>fresh user account</strong>.
+  Thereby you ensure that no pre-installed user-level software can interfere, particularly
+  through the <code class="language-plaintext highlighter-rouge">$env:path</code> variable.</li>
+    <li>Re-running the installer after a failed attempt can sometimes remedy the problem. E.g., when the QIWI installer invokes the MVCR installer, the return value of MVCR may insinuate a problem when in fact the MVCR installation went well. When running the QIWI installer the second time, it will detect the installed MVCR and proceed with subsequent installation steps.</li>
+    <li>Re-running the installer in a different network environment may help. E.g., on a slow, public WiFi the download of a package may time out due to network congestion. Re-running the installer
+  on an institutional or home network, and/or connecting via Ethernet (cable) may resolve
+  the problem.</li>
+    <li>
+      <p><strong>Problem Diagnosis and Getting Help</strong></p>
+  
+      <p>The installer creates a log file on your local computer that can be used for diagnosing problems that occurred during the installation. The name of the log file is <code class="language-plaintext highlighter-rouge">log.txt</code> and can be accessed from a PowerShell console window as follows.</p>
+      <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="w">  </span><span class="n">Set-Location</span><span class="w"> </span><span class="s2">"</span><span class="nv">$</span><span class="nn">env</span><span class="p">:</span><span class="nv">localappdata</span><span class="s2">/qiskit_windows_installer/log"</span><span class="w">
+    </span><span class="n">cat</span><span class="w"> </span><span class="nx">log.txt</span><span class="w">
+  </span></code></pre></div>    </div>
+      <p>Please be aware that this log by its very nature will contain private information, including your account user ID and the contents of your <code class="language-plaintext highlighter-rouge">$env.path</code> variable. The installer itself will not share any information from your computer (you can infer this from the source code of the <a href="https://raw.githubusercontent.com/ket-q/qiskit_windows_installer/refs/heads/main/qiskit_installer.ps1">script</a>), but you may consider the contents of the log file before sharing it with others (e.g., if you want to ask for help).</p>
+    </li>
+  </ul>
+  
+  <h3 id="specific-issues">Specific Issues<a class="anchorjs-link " href="#specific-issues" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h3>
+  
+  <p><strong>Microsoft Visual C++ Redistributable refuses to download (Error 28)</strong> <br>
+  <em>This error may occur when you are connected to a network with a proxy or a network with specific network settings.</em>
+  <br>
+  Solution:
+  Download and install the Microsoft Visual C++ Redistributable manually from <a href="https://aka.ms/vs/17/release/vc_redist.x64.exe">here</a> and rerun the QIWI installer.</p>
+  
+  <p><strong>Visual studio code refuses to download (Error 28)</strong> <br>
+  <em>This error may occur when you are connected to a network with a proxy or a network with specific network settings.</em>
+  <br>
+  Solution:
+  Download and install VS Code manually from <a href="https://code.visualstudio.com/">here</a> and re-run the QIWI installer.</p>
+  
+  <h2 id="faq">FAQ<a class="anchorjs-link " href="#faq" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h2>
+  <h3 id="why-does-qiwi-only-provide-specific-qiskit-versions-such-as-version-132-and-142">Why does QIWI only provide specific Qiskit versions, such as version 1.3.2 and 1.4.2?<a class="anchorjs-link " href="#why-does-qiwi-only-provide-specific-qiskit-versions-such-as-version-132-and-142" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h3>
+  <p>QIWI only supports Qiskit configurations and Python versions which have been tested by the QIWI developers. The configurations are curated to make sure that no missed dependencies
+  or incompatibilites arise with an installed SDK.</p>
+  
+  <h2 id="-licenses">📜 Licenses<a class="anchorjs-link " href="#-licenses" aria-label="Anchor" data-anchorjs-icon="" style="font: 1em / 1 anchorjs-icons; padding-left: 0.375em;"></a></h2>
+  
+  <p>Please find the license of the Qiskit Windows Installer <a href="https://github.com/ket-q/qiskit_windows_installer/blob/main/LICENSE">here</a>.</p>
+  
+  <p>In addition, you will be asked to accept (a subset of) the following licences during installation:</p>
+  <ul>
+    <li><a href="https://code.visualstudio.com/license">VS Code</a></li>
+    <li><a href="https://github.com/Qiskit/qiskit/blob/main/LICENSE.txt">Qiskit</a></li>
+    <li><a href="https://docs.python.org/3/license.html#terms-and-conditions-for-accessing-or-otherwise-using-python">Python</a></li>
+    <li><a href="https://pyenv-win.github.io/pyenv-win/#license-and-copyright">Pyenv-win</a></li>
+    <li><a href="https://visualstudio.microsoft.com/license-terms/vs2022-cruntime/">Microsoft Visual C++ Redistributable</a></li>
+  </ul>
+  
+  
+        
+        <div class="footer border-top border-gray-light mt-5 pt-3 text-right text-gray">
+          This site is open source. <a href="https://github.com/ket-q/qiskit_windows_installer/edit/main/README.md">Improve this page</a>.
+        </div>
+        
+    </div>
+
+    
+</body>
+</html>
