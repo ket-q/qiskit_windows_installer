@@ -1,7 +1,7 @@
 # ==================================================
 # ================ GLOBAL VARIABLES ================
 # ==================================================
-$QISKIT_WINDOWS_INSTALLER_VERSION = '0.1.7'
+$QISKIT_WINDOWS_INSTALLER_VERSION = '0.1.8'
 
 
 # Stop the script when a cmdlet or a native command fails
