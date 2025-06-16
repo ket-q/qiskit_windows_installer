@@ -68,6 +68,8 @@ $USER_CODE_CMD = "$env:LOCALAPPDATA\Programs\Microsoft VS Code\bin\code.cmd"
 $USER_CODE_EXE = "$env:LOCALAPPDATA\Programs\Microsoft VS Code\Code.exe"
 $SYS_CODE_EXE = "C:\Program Files\Microsoft VS Code\Code.exe"
 $SYS_CODE_CMD = "C:\Program Files\Microsoft VS Code\bin\code.cmd"
+$global:CODE_CMD = $null
+$global:CODE_EXE = $null
 $PYENV_EXE = "$env:USERPROFILE\.pyenv\pyenv-win\bin\pyenv.bat"
 $PYENV_PYTHON_EXE = Join-Path $env:USERPROFILE ".pyenv\pyenv-win\versions\$PYTHON_VERSION\python.exe"
 
@@ -725,6 +727,7 @@ function Install-VSCode-Extension {
     )
 
     try {
+
         if ( @(& $CODE_CMD --list-extensions | Where-Object { $_ -match $ext }).Count -ge 1 ) {
             Log-Status "VSCode extension $ext already installed"
             return
@@ -1671,7 +1674,7 @@ if (!((Test-Path $USER_CODE_EXE) -or (Test-Path $SYS_CODE_EXE))) {
     Install-VSCode
     Refresh-PATH
     # Ensure VScode installation succeeded:
-    if (!(Test-Path $CODE_EXE)) {
+    if (!(Test-Path $USER_CODE_EXE)) {
         $err_msg = (
             'VSCode installation failed in Step 6a',
             'Manual check required.'
@@ -1682,18 +1685,17 @@ if (!((Test-Path $USER_CODE_EXE) -or (Test-Path $SYS_CODE_EXE))) {
     }
 } else {
     Log-Status 'VSCode already installed'
+}
 
-    if(Test-Path $SYS_CODE_EXE) {
+if(Test-Path $SYS_CODE_EXE) {
         Log-Status "System-wide VScode already installed"
-        $CODE_EXE = $SYS_CODE_EXE
-        $CODE_CMD = $SYS_CODE_CMD
+        $global:CODE_EXE = $SYS_CODE_EXE
+	$global:CODE_CMD = $SYS_CODE_CMD
     } else {
         Log-Status "User VScode already installed"
-        $CODE_EXE = $USER_CODE_EXE
-        $CODE_CMD = $USER_CODE_CMD
-    }
-
-}
+        $global:CODE_EXE = $USER_CODE_EXE
+        $global:CODE_CMD = $USER_CODE_CMD
+	}
 
 Log-Status 'Installing VSCode Python extension'
 Install-VSCode-Extension 'ms-python.python'
