@@ -1,7 +1,7 @@
 # ==================================================
 # ================ GLOBAL VARIABLES ================
 # ==================================================
-$QISKIT_WINDOWS_INSTALLER_VERSION = '0.1.8'
+$QISKIT_WINDOWS_INSTALLER_VERSION = '0.1.10'
 
 
 # Stop the script when a cmdlet or a native command fails
@@ -1292,7 +1292,7 @@ function Config-window{
     $global:qiskit_selection = $null
 
     # Add items to the ComboBox
-    @("qiskit_2.0.0 (latest)","qiskit_1.4.2", "qiskit_1.3.2") | ForEach-Object {
+    @("qiskit_2.1.0","qiskit_2.0.3","qiskit_1.4.3", "qiskit_1.3.3") | ForEach-Object {
         $item = New-Object Windows.Controls.ComboBoxItem
         $item.Content = $_
         $item.FontSize = 20
