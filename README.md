@@ -14,5 +14,5 @@
 
 ##  📍 What is this repository ?
 
-This repository contains the implementation of QIWI. For more information, please visit the [QIWI website](https://ket-q.github.io/qiskit_windows_installer/).
+This repository contains the implementation of QIWI. For more informations, please visit the [QIWI website](https://ket-q.github.io/qiskit_windows_installer/).
 

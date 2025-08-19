@@ -1,7 +1,7 @@
 # ==================================================
 # ================ GLOBAL VARIABLES ================
 # ==================================================
-$QISKIT_WINDOWS_INSTALLER_VERSION = '0.1.10'
+$QISKIT_WINDOWS_INSTALLER_VERSION = '0.1.11'
 
 
 # Stop the script when a cmdlet or a native command fails
@@ -1292,7 +1292,7 @@ function Config-window{
     $global:qiskit_selection = $null
 
     # Add items to the ComboBox
-    @("qiskit_2.1.0","qiskit_2.0.3","qiskit_1.4.3", "qiskit_1.3.3") | ForEach-Object {
+    @("qiskit_2.1.1","qiskit_2.0.3","qiskit_1.4.3", "qiskit_1.3.3") | ForEach-Object {
         $item = New-Object Windows.Controls.ComboBoxItem
         $item.Content = $_
         $item.FontSize = 20
@@ -1969,7 +1969,7 @@ try {
 catch {
     $err_msg = (
         "Installation of Qiskit in venv $MY_VENV_DIR failed at Step 13",
-        "Pip couldn't install the requirements_file, $requirements_file",
+        "Pip couldn't install the requirements_file",
         "Manual intervention required"
         ) -join "`r`n"
     Log-Err -firstArg 'fatal' -secondArg $err_msg -listArgs $($_.Exception.Message)
