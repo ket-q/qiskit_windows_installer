@@ -1291,12 +1291,32 @@ function Config-window{
 
     $global:qiskit_selection = $null
 
-    # Add items to the ComboBox
-    @("qiskit_2.1.1","qiskit_2.0.3","qiskit_1.4.3", "qiskit_1.3.3") | ForEach-Object {
-        $item = New-Object Windows.Controls.ComboBoxItem
-        $item.Content = $_
-        $item.FontSize = 20
-        $null = $comboBox.Items.Add($item)
+    
+    $apiUrl = "https://api.github.com/repos/ket-q/qiskit_windows_installer/contents/resources/config?ref=main"
+
+    try {
+        # 1. Fetch file list from GitHub
+        $files = Invoke-RestMethod -Uri $apiUrl -Method Get
+
+        # 2. Extract and format the version strings
+        # Converts "requirements_qiskit_1_4_5.txt" -> "qiskit_1.4.5" -> "qiskit_1.4.5" (replacing underscores with dots after the prefix)
+        $versions = $files | Where-Object { $_.name -match "qiskit_([\d_]+)" } | ForEach-Object {
+            $rawVersion = $Matches[1] # e.g., "1_4_5"
+            "qiskit_" + $rawVersion.Replace("_", ".") # e.g., "qiskit_1.4.5"
+        }
+
+        # 3. Populate the ComboBox
+        foreach ($v in $versions) {
+            $item = New-Object System.Windows.Controls.ComboBoxItem
+            $item.Content = $v
+            $item.FontSize = 20
+            # Store the original filename structure in Tag for easy URL building later
+            $item.Tag = "requirements_" + $v.Replace(".", "_") + ".txt"
+            $null = $comboBox.Items.Add($item)
+        }
+    }
+    catch {
+        Write-Error "Failed to retrieve versions: $_"
     }
 
     # Event handler for selection changed
